@@ -1,0 +1,42 @@
+# Secrets and sensitive information
+secrets.yaml
+
+# ESPHome build artifacts
+.esphome/
+*.bin
+*.elf
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Logs
+*.log
+log/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
