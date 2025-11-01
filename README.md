@@ -198,14 +198,41 @@ cat log/compile.log
 - [Home Assistant ESPHome Integration](https://www.home-assistant.io/integrations/esphome/)
 - [ESP32 Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
 
+## Hardware Configuration
+
+### Sensors
+- **3x Dallas DS18B20 Temperature Sensors** (One-Wire on GPIO25)
+  - Water temperature: `0xd81c77d446f18a28` (30s updates)
+  - Roof box temperature: `0x65011447d4f2aa28` (30s updates)  
+  - Heater temperature: `0xe0011448ab01aa28` (30s updates)
+- **Light Sensor** (ADC on GPIO32)
+  - Roof illumination monitoring (60s updates)
+- **WiFi Signal Strength** (60s updates)
+
+### Control Outputs
+- **GPIO2**: Pool circulation pump relay
+  - Auto-shutoff: 1 hour after activation
+- **GPIO16**: Pool heater relay
+  - Auto-shutoff: 8 hours after activation
+- **Virtual Switch**: Combined heating mode
+  - Activates both pump + heater
+  - Auto-shutoff: 8 hours after activation
+
+### Communication
+- **Home Assistant API**: Encrypted connection
+- **MQTT**: Publishes sensor data to broker at `192.168.1.8`
+  - Topics: `pool_heat/temp/water`, `pool_heat/temp/roof`, `pool_heat/temp/heater`, `pool_heat/ligth/roof`
+- **Fallback WiFi AP**: "Esp32-Pileta Fallback Hotspot" (activates if main WiFi fails)
+
 ## Status Summary
-- 📝 Project structure recreated
-- ⏳ Need to add main configuration file (esp32-pileta-hybrid.yaml)
+- ✅ Project structure recreated
+- ✅ Main configuration file restored (esp32-pileta-hybrid.yaml)
 - ⏳ Need to update secrets.yaml with actual credentials
-- 📋 Ready for configuration and compilation
+- 📋 Ready for validation and compilation
 
 ## Next Steps
-1. Add your ESP32 configuration file (`esp32-pileta-hybrid.yaml`)
+1. ✅ ~~Add your ESP32 configuration file (`esp32-pileta-hybrid.yaml`)~~ COMPLETE
 2. Update `secrets.yaml` with your WiFi credentials
-3. Validate configuration: `esphome config esp32-pileta-hybrid.yaml`
-4. Choose compilation method and flash firmware
+3. Copy files to Home Assistant: `scp esp32-pileta-hybrid.yaml hassio@192.168.1.7:/config/esphome/`
+4. Validate configuration: `esphome config esp32-pileta-hybrid.yaml`
+5. Choose compilation method and flash firmware

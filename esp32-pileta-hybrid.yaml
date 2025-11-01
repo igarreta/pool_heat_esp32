@@ -1,0 +1,139 @@
+esphome:
+  name: esp32-pileta
+  friendly_name: ESP32-pileta
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "TkVr/h9aAttsFad49ShvWFRfdA6NGtCM2BCE7R4sFxg="
+
+ota:
+  - platform: esphome
+    password: "e07a33a39b7e3fca2685b424524718b6"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32-Pileta Fallback Hotspot"
+    password: "KHIUDZeptBI2"
+
+captive_portal:
+  
+mqtt:
+  broker: "192.168.1.8"
+
+one_wire:
+  - platform: gpio
+    pin: GPIO25
+
+sensor:
+  - platform: dallas_temp
+    address: 0xd81c77d446f18a28
+    name: "temperatura agua"
+    update_interval: 30s
+    id: temperatura_agua
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: "pool_heat/temp/water"
+            payload: !lambda |-
+              return String(id(temperatura_agua).state).c_str();
+
+
+  - platform: dallas_temp
+    address: 0x65011447d4f2aa28
+    name: "temperatura caja techo"
+    update_interval: 30s
+    id: temperatura_caja
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: "pool_heat/temp/roof"
+            payload: !lambda |-
+              return String(id(temperatura_caja).state).c_str();
+
+  - platform: dallas_temp
+    address: 0xe0011448ab01aa28 
+    name: "temperatura calefactor"
+    update_interval: 30s
+    id: temperatura_calefactor
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: "pool_heat/temp/heater"
+            payload: !lambda |-
+              return String(id(temperatura_calefactor).state).c_str();
+
+  - platform: adc
+    pin: GPIO32
+    name: "Iluminacion techo"
+    update_interval: 60s
+    id: iluminacion_techo
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: "pool_heat/ligth/roof"
+            payload: !lambda |-
+              return String(id(iluminacion_techo).state).c_str();
+
+  - platform: wifi_signal
+    name: "Señal WiFi ESP32 Pileta"
+    update_interval: 60s
+
+    
+switch:
+  - platform: gpio
+    pin: GPIO2
+    name: "Bomba pileta (ESP32)"
+    id: pileta_bomba_esp
+    on_turn_on:
+      then:
+        # - logger.log: "GPIO2 encendido. Temporizador iniciado para apagar en 1 hora."
+        - delay: 1h
+        - switch.turn_off: pileta_bomba_esp
+        # - logger.log: "GPIO2 apagado automáticamente después de 1 hora."
+
+  - platform: gpio
+    pin: GPIO16
+    name: "Calefaccion pileta (ESP32)"
+    id: pileta_calefaccion_esp
+    on_turn_on:
+      then:
+        - delay: 8h
+        - switch.turn_off: pileta_calefaccion_esp
+        - logger.log: "pileta_calefaccion_esp apagado automáticamente después de 8 horas."
+
+  # Switch virtual: Modo calefacción (ambas bombas)
+  - platform: template
+    name: "Calefaccion Completa (ESP32)"
+    id: pileta_calefaccion_completa
+    lambda: |-
+      // El switch está ON solo si AMBAS bombas están encendidas
+      if (id(pileta_bomba_esp).state && id(pileta_calefaccion_esp).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: pileta_bomba_esp
+      - switch.turn_on: pileta_calefaccion_esp
+      - logger.log: "Modo calefacción activado: ambas bombas encendidas"
+      - delay: 8h
+      - switch.turn_off: pileta_bomba_esp
+      - switch.turn_off: pileta_calefaccion_esp
+      - logger.log: "Modo calefacción apagado automáticamente después de 8 horas"
+    turn_off_action:
+      - switch.turn_off: pileta_bomba_esp
+      - switch.turn_off: pileta_calefaccion_esp
+      - logger.log: "Modo calefacción desactivado manualmente"
