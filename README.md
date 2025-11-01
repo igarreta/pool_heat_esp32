@@ -22,21 +22,11 @@ ESPHome-based pool heating controller using ESP32 for Home Assistant integration
 ### Phase 1: Configuration Setup (2025-10-24)
 1. ✅ Created `secrets.yaml` file with WiFi credential placeholders
 2. ⏳ Update `secrets.yaml` with actual WiFi credentials
-3. ⏳ Validate ESPHome configuration:
-   ```bash
-   esphome config esp32-pileta-hybrid.yaml
-   ```
+
 
 ### Phase 2: Firmware Compilation
 **Note**: Compilation on Home Assistant host failed due to memory constraints
 
-**Error Details**:
-- CMake/PlatformIO memory allocation failure (attempted 8GB allocation)
-- Available system memory on HA: 3.8GB total, 2.5GB available
-- Framework: ESP-IDF 5.4.2 with Arduino 3.2.1
-- Error: "memory allocation of 8380369152 bytes failed"
-
-**Root Cause**: Home Assistant environment has insufficient memory for ESP-IDF compilation
 
 ## Compilation Methods
 
@@ -59,74 +49,7 @@ The ESPHome add-on in Home Assistant provides a web interface optimized for comp
 - Automatic device discovery
 - Log viewing
 
-### Method 2: ESPHome Web (Browser-based)
-Compile and install directly from your browser.
 
-**Steps**:
-1. Visit https://web.esphome.io/
-2. Connect ESP32 via USB to your computer
-3. Click **Connect**
-4. Select your device port
-5. Click **Install** → **Prepare for first use**
-6. Upload your configuration files when prompted
-7. Firmware will compile in the cloud and install directly
-
-**Advantages**:
-- No local installation required
-- Works from any computer with Chrome/Edge browser
-- USB connection ensures reliable flashing
-
-### Method 3: Local Machine Compilation
-If you have a local machine with more resources.
-
-**Requirements**:
-- Python 3.9 or later
-- At least 8GB RAM recommended
-- ESPHome CLI installed
-
-**Installation**:
-```bash
-pip install esphome
-```
-
-**Compilation**:
-```bash
-esphome compile esp32-pileta-hybrid.yaml
-```
-
-**Upload via USB**:
-```bash
-esphome upload esp32-pileta-hybrid.yaml
-```
-
-**Upload via OTA** (after initial USB flash):
-```bash
-esphome run esp32-pileta-hybrid.yaml
-```
-
-### Method 4: Manual Flash with esptool
-If you have a pre-compiled `.bin` file.
-
-**Installation**:
-```bash
-pip install esptool
-```
-
-**Flash Command**:
-```bash
-esptool.py --port /dev/ttyUSB0 write_flash 0x0 firmware.bin
-```
-
-## Post-Installation Steps
-
-### 1. Monitor Device Logs
-```bash
-esphome logs esp32-pileta-hybrid.yaml
-```
-
-### 2. Verify WiFi Connection
-- Device should connect to configured WiFi network
-- Check Home Assistant for automatic discovery
 
 ### 3. Home Assistant Integration
 1. Navigate to **Settings** → **Devices & Services**
