@@ -1,0 +1,297 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**ESPHome-based pool solar heating controller for ESP32-DevKit** that integrates with Home Assistant. Uses a **hybrid architecture** where control logic runs on the ESP32 (due to unreliable WiFi) while Home Assistant provides the web interface for configuration and monitoring.
+
+**Location:** Buenos Aires, Argentina
+**HA Server:** Proxmox VM at `hassio@192.168.1.7`
+**MQTT Broker:** `192.168.1.8`
+**ESP32 Device Name:** ESP32-pileta
+**GitHub Repository:** https://github.com/igarreta/pool_heat_esp32.git
+
+## Architecture
+
+### Hybrid Control Strategy
+
+**Critical Design Decision:** Logic must run on ESP32 due to unstable WiFi connection.
+
+- **ESP32 Role:** Autonomous heating control logic, sensor reading, relay control
+- **Home Assistant Role:** Configuration interface (input entities), status display, optional override controls
+- **Communication:** ESP32 pulls configuration from HA input entities, reports status via MQTT + HA API
+
+### Hardware Configuration
+
+**Board:** ESP32-DevKit (Arduino framework)
+
+**Temperature Sensors** (Dallas DS18B20 on GPIO25, One-Wire):
+- `0xd81c77d446f18a28` - Pool water temperature (SAG)
+- `0x65011447d4f2aa28` - Roof box temperature
+- `0xe0011448ab01aa28` - Solar heater temperature (SCL)
+
+**Light Sensor:** ADC on GPIO32 - Roof illumination
+
+**Control Outputs:**
+- **GPIO2:** Pool circulation pump relay (1-hour auto-shutoff)
+- **GPIO16:** Pool heater relay (8-hour auto-shutoff)
+- **Virtual Switch:** "Calefaccion Completa" - activates both pump + heater (8-hour auto-shutoff)
+
+**Warning:** GPIO2 is a strapping pin - monitor boot behavior if issues occur.
+
+### Home Assistant Integration Entities
+
+**Input Controls (HA → ESP32):**
+- `input_boolean.activar_calefaccion_pileta` (IAC) - Master enable/disable
+- `input_number.pileta_temp_objetivo` (ITO) - Target pool temperature
+- `input_number.pileta_temp_max_diff` (IMX) - Temperature delta to turn ON heating
+- `input_number.pileta_temp_min_diff` (IMI) - Temperature delta to turn OFF heating
+
+**Control Entity (ESP32 exposes to HA):**
+- `switch.pileta_exp32_calefaccion_completa_esp32` (SWA) - Heating system on/off
+
+**Sensor Entities (ESP32 → HA):**
+- `sensor.esp32_pileta_temperatura_agua` (SAG) - Current water temperature
+- `sensor.esp32_pileta_temperatura_calefactor` (SCL) - Heater temperature
+
+### Control Logic (to be implemented on ESP32)
+
+**Turn ON heating when ALL conditions met:**
+1. IAC is enabled
+2. SAG < (ITO - 0.5°C) — Dead zone prevents rapid cycling
+3. SCL > (SAG + IMX) — Heater is sufficiently warmer than water
+
+**Turn OFF heating when ANY condition met:**
+1. SAG ≥ ITO — Target temperature reached
+2. SCL ≤ (SAG + IMI) — Heater insufficient temperature
+3. IAC is disabled
+4. Time = 18:00 (if ESP32 has reliable time)
+
+**Parameter Validation:** IMX ≥ (IMI + 1°C) to prevent logic conflicts
+
+**Safety Timers:**
+- Pump auto-shutoff: 1 hour
+- Heater auto-shutoff: 8 hours
+- Combined mode auto-shutoff: 8 hours
+- Logic must account for these automatic shutdowns
+
+**ESP32 Disconnection Handling:**
+- Retrieve current values from Home Assistant at startup
+- Store values locally if HA unavailable
+- Update stored values when new values received
+- Turn off both pumps at shutdown
+
+## Essential Commands
+
+### Git Workflow
+
+**IMPORTANT:** Commit and push changes regularly to maintain project history.
+
+**Check status:**
+```bash
+git status
+```
+
+**Stage and commit changes:**
+```bash
+git add .
+git commit -m "Descriptive commit message"
+```
+
+**Push to GitHub:**
+```bash
+git push origin main
+```
+
+**Complete workflow after making changes:**
+```bash
+git add .
+git commit -m "Update ESP32 control logic" && git push origin main
+```
+
+### ESPHome Dashboard Workflow (Recommended)
+
+**Copy configuration to Home Assistant:**
+```powershell
+# From Windows PowerShell
+scp esp32-pileta.yaml hassio@192.168.1.7:/config/esphome/
+```
+
+**Alternative:** Copy YAML content via clipboard and paste into ESPHome Dashboard.
+
+**Configure secrets:**
+- WiFi credentials are managed directly in ESPHome Dashboard UI
+- Edit device configuration in the dashboard
+- Secrets are stored securely by Home Assistant
+
+**Compile and flash:**
+1. Open Home Assistant web interface
+2. Navigate to **Settings → Add-ons → ESPHome → Open Web UI**
+3. Click on the device card
+4. Click **Install** → Choose method:
+   - **Wirelessly** (if device already has ESPHome)
+   - **Plug into this computer** (USB connection)
+   - **Manual download** (download .bin file)
+5. Monitor logs after installation
+
+### Validation (if ESPHome CLI installed locally)
+
+```bash
+esphome config esp32-pileta.yaml
+```
+
+### Home Assistant Debugging
+
+**SSH connection:**
+```bash
+ssh -o "MACs=hmac-sha2-256-etm@openssh.com" hassio@192.168.1.7
+```
+
+**Check add-on resource usage:**
+```bash
+ha addons stats 5c53de3b_esphome  # ESPHome add-on
+ha addons stats a0d7b954_vscode   # VS Code Server
+```
+
+**Check HA core status:**
+```bash
+ha core stats
+ha core logs | tail -50
+```
+
+**System health check:**
+```bash
+uptime && vmstat 1 3
+```
+
+See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
+
+## Development Workflow
+
+### Current State
+- Main ESP32 configuration: `esp32-pileta.yaml`
+- Secrets managed in ESPHome Dashboard
+- Control logic not yet implemented (see instructions.md for requirements)
+
+### Typical Workflow
+
+1. **Edit** `esp32-pileta.yaml` to modify ESP32 logic (or edit directly in ESPHome Dashboard)
+2. **Test locally** if possible with validation
+3. **Commit changes** to Git with descriptive message
+4. **Push to GitHub** to maintain backup and history
+5. **Copy** file to HA via SCP or clipboard
+6. **Configure secrets** in ESPHome Dashboard UI if needed
+7. **Compile** via ESPHome Dashboard in HA
+8. **Flash** firmware (USB first time, then OTA)
+9. **Monitor** logs in ESPHome Dashboard
+10. **Test** control logic via HA interface
+11. **Document** any issues or changes in commit messages
+
+### Important Constraints
+
+**Version Control:**
+- **Always commit and push changes regularly**
+- Use descriptive commit messages
+- Never commit sensitive data (WiFi credentials, API keys)
+- `.gitignore` protects secrets and build artifacts
+
+**Security:**
+- WiFi credentials and secrets are managed securely in ESPHome Dashboard
+- API encryption keys and OTA passwords are stored in the YAML configuration
+- Never commit actual WiFi credentials to Git
+
+**Hardware:**
+- GPIO2 is a strapping pin - may affect boot sequence if misconfigured
+- ESP32 WiFi is 2.4GHz only
+
+**Connectivity:**
+- WiFi connection is unstable - design logic to handle disconnections
+- ESP32 must operate autonomously
+- Store fallback values locally
+
+**Compilation:**
+- Do NOT compile on HA host directly (memory constraints)
+- Use ESPHome Dashboard exclusively
+
+## File Structure
+
+```
+pool_heat_esp32/
+├── esp32-pileta.yaml           # Main ESPHome configuration
+├── instructions.md             # Detailed requirements for automation logic
+├── README.md                   # Project documentation
+├── CLAUDE.md                   # This file
+├── WARP_HA_DEBUG.md           # Home Assistant debugging guide
+├── .gitignore                  # Protects build artifacts and secrets
+├── LICENSE                     # MIT License
+├── docs/
+│   ├── COMPILATION_GUIDE.md   # Detailed compilation instructions (all methods)
+│   └── SHELL_TIPS.md          # Shell troubleshooting
+└── log/                        # Log output directory
+```
+
+## Key Design Patterns
+
+### ESP32 Autonomy
+The ESP32 must operate independently due to WiFi instability:
+- Pull configuration parameters from HA on startup
+- Store last-known-good values locally
+- Continue operation if HA becomes unavailable
+- Re-sync when connection restored
+- Fail-safe: turn off pumps on shutdown
+
+### Dead Zone Logic
+Prevent rapid on/off cycling:
+- Turn ON threshold: SAG < (ITO - 0.5°C)
+- Turn OFF threshold: SAG ≥ ITO
+- This 0.5°C dead zone prevents oscillation
+
+### Safety First
+Multiple layers of automatic shutdowns:
+- Individual relay timers (1h pump, 8h heater)
+- Combined mode timer (8h)
+- Time-based cutoff (18:00 if reliable time available)
+- Master disable via IAC
+
+## Troubleshooting
+
+### WiFi Connection Issues
+- Verify 2.4GHz WiFi network
+- Check WiFi credentials in ESPHome Dashboard
+- Monitor logs in ESPHome Dashboard
+- Fallback AP activates if main WiFi fails:
+  - SSID: "Esp32-Pileta Fallback Hotspot"
+  - Password: "KHIUDZeptBI2"
+
+### Configuration Errors
+- Validate YAML syntax in ESPHome Dashboard
+- Check indentation (spaces, not tabs)
+- Verify WiFi secrets are configured in dashboard
+
+### GPIO2 Boot Issues
+- GPIO2 is a strapping pin
+- If boot fails consistently, may need to change pin assignment
+- Monitor serial output during boot
+
+### Home Assistant Add-on Issues
+- See `WARP_HA_DEBUG.md` for comprehensive debugging procedures
+- Check resource usage: `ha addons stats`
+- Restart add-on if needed: `ha addons restart 5c53de3b_esphome`
+
+## Platform Notes
+
+**Development Environment:**
+- OS: Windows
+- Shell: PowerShell 5.1
+- Working Directory: `C:\Users\RamonSantiagoIgarret\bin\pool_heat_esp32`
+
+**Deployment Target:**
+- Home Assistant: `hassio@192.168.1.7`
+- ESPHome Directory: `/config/esphome/`
+- Access: SSH or ESPHome Dashboard Web UI
+
+**Version Control:**
+- Git repository: https://github.com/igarreta/pool_heat_esp32.git
+- Branch: main
+- Commit and push changes regularly
