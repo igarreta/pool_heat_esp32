@@ -1,13 +1,13 @@
 # Project Status - Pool Heat ESP32
 
 **Last Updated:** 2025-11-02
-**Current Phase:** Documentation cleanup and preparation for control logic implementation
+**Current Phase:** Planning complete - Ready to implement control logic
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
 ---
 
-## Current Status: Ready for Control Logic Implementation
+## Current Status: Implementation Plan Complete
 
 ### ✅ Recently Completed (2025-11-02)
 
@@ -20,6 +20,7 @@
    - ✅ Cleaned up file structure
    - ✅ Committed and pushed to GitHub
    - ✅ Reorganized README.md and PROJECT_STATUS.md to eliminate overlap
+   - ✅ Created detailed implementation plan with 5 phases
 
 2. **Configuration Status**
    - ✅ Main configuration file: `esp32-pileta.yaml`
@@ -27,44 +28,135 @@
    - ✅ MQTT integration configured
    - ✅ Home Assistant API configured with encryption
 
-### 📋 Next Steps (Priority Order)
+### 📋 Implementation Plan
 
-#### Immediate: Implement Control Logic
-The main control logic described in `instructions.md` needs to be implemented in `esp32-pileta.yaml`:
+#### Phase 1: Add Home Assistant Input Entities (ESPHome side)
+**Goal:** Subscribe to HA input entities and store values locally on ESP32
 
-**Control Logic Requirements:**
-1. **Turn ON heating when ALL conditions met:**
-   - IAC (input_boolean.activar_calefaccion_pileta) is enabled
-   - SAG < (ITO - 0.5°C) — Dead zone prevents rapid cycling
-   - SCL > (SAG + IMX) — Heater is sufficiently warmer than water
+**Tasks:**
+- [ ] Add `homeassistant` text sensor for IAC (input_boolean.activar_calefaccion_pileta)
+- [ ] Add `homeassistant` sensor for ITO (input_number.pileta_temp_objetivo)
+- [ ] Add `homeassistant` sensor for IMX (input_number.pileta_temp_max_diff)
+- [ ] Add `homeassistant` sensor for IMI (input_number.pileta_temp_min_diff)
+- [ ] Configure sensors to update on HA state change
+- [ ] Add globals to store last-known values for offline operation
 
-2. **Turn OFF heating when ANY condition met:**
-   - SAG ≥ ITO — Target temperature reached
-   - SCL ≤ (SAG + IMI) — Heater insufficient temperature
-   - IAC is disabled
-   - Time = 18:00 (if ESP32 has reliable time)
+**Expected outcome:** ESP32 can read and store HA configuration values
 
-3. **Implementation details:**
-   - Pull input values from HA (IAC, ITO, IMX, IMI) at startup and on change
-   - Store locally for autonomous operation
-   - Implement dead zone logic
-   - Account for safety timers (1h pump, 8h heater)
-   - Handle ESP32 disconnection gracefully
-   - Turn off pumps on shutdown
+---
 
-#### After Control Logic: Testing Phase
+#### Phase 2: Implement Core Control Logic
+**Goal:** Create interval component to evaluate heating conditions and control relays
+
+**Tasks:**
+- [ ] Add `interval` component (check every 30 seconds)
+- [ ] Implement turn-ON logic:
+  - Check IAC is enabled (true)
+  - Check SAG < (ITO - 0.5°C) — dead zone
+  - Check SCL > (SAG + IMX) — heater sufficiently hot
+  - If ALL true: turn on `pileta_calefaccion_completa`
+- [ ] Implement turn-OFF logic:
+  - Check SAG ≥ ITO — target reached
+  - Check SCL ≤ (SAG + IMI) — heater too cold
+  - Check IAC is disabled
+  - If ANY true: turn off `pileta_calefaccion_completa`
+- [ ] Add logging for decision points
+
+**Expected outcome:** Basic heating control works based on temperature and configuration
+
+---
+
+#### Phase 3: Add Time-Based Control (Optional)
+**Goal:** Implement 18:00 cutoff if ESP32 has reliable time
+
+**Tasks:**
+- [ ] Add ESPHome `time` platform (SNTP)
+- [ ] Configure time zone (America/Argentina/Buenos_Aires)
+- [ ] Add time check in turn-OFF logic (if hour >= 18)
+- [ ] Add flag to prevent new heating cycles after 17:45
+- [ ] Test time synchronization reliability
+
+**Expected outcome:** System stops heating at 18:00 automatically
+
+**Note:** May skip if WiFi instability makes time sync unreliable
+
+---
+
+#### Phase 4: Add Disconnection Handling
+**Goal:** Ensure safe operation when WiFi/HA connection lost
+
+**Tasks:**
+- [ ] Add `on_connect` automation to retrieve current HA values
+- [ ] Add `on_disconnect` automation to log event
+- [ ] Verify globals retain values during disconnection
+- [ ] Test behavior: ESP32 continues with last-known values when offline
+- [ ] Add `on_shutdown` automation to turn off both pumps
+
+**Expected outcome:** ESP32 operates autonomously during disconnections, safe shutdown
+
+---
+
+#### Phase 5: Testing & Validation
+**Goal:** Verify correct behavior in all scenarios
+
+**Test Cases:**
+- [ ] **Normal operation:** Heating turns on when conditions met
+- [ ] **Dead zone:** No rapid cycling when temperature near target
+- [ ] **Safety timers:** Pumps shut off after timeout (1h pump, 8h heater)
+- [ ] **Parameter changes:** ESP32 responds to HA input changes
+- [ ] **WiFi loss:** Continues with last values, reconnects properly
+- [ ] **Manual override:** Can turn off heating manually via HA
+- [ ] **IAC disable:** Heating stops immediately when IAC disabled
+- [ ] **Temperature reached:** Heating stops when SAG ≥ ITO
+- [ ] **Heater too cold:** Heating stops when SCL ≤ (SAG + IMI)
+- [ ] **18:00 cutoff:** (if implemented) No new cycles after 18:00
+
+**Deployment:**
 - [ ] Copy updated YAML to Home Assistant
-- [ ] Compile and flash firmware via ESPHome Dashboard
-- [ ] Verify control logic behavior
-- [ ] Test edge cases (WiFi loss, parameter changes, safety timers)
-- [ ] Monitor for 24-48 hours
+- [ ] Validate YAML syntax in ESPHome Dashboard
+- [ ] Compile firmware via ESPHome Dashboard
+- [ ] Flash to ESP32 (USB or OTA)
+- [ ] Monitor logs for 24-48 hours
+- [ ] Document any issues or unexpected behavior
 
-#### Future Enhancements
+---
+
+#### Future Enhancements (After Successful Testing)
 - [ ] Implement runtime tracking (daily heating hours)
-- [ ] Add parameter validation (IMX ≥ IMI + 1°C)
-- [ ] Create HA dashboard for monitoring
-- [ ] Add historical logging
-- [ ] Optimize for solar heating efficiency
+- [ ] Add parameter validation alert (IMX ≥ IMI + 1°C)
+- [ ] Create HA dashboard for monitoring and visualization
+- [ ] Add historical logging to track efficiency
+- [ ] Optimize heating schedule based on solar patterns
+- [ ] Add weather forecast integration
+- [ ] Implement predictive heating start time
+
+---
+
+### 🔧 Technical Implementation Notes
+
+**ESPHome Components to Use:**
+- `homeassistant.text_sensor` - For boolean inputs from HA
+- `homeassistant.sensor` - For numeric inputs from HA
+- `globals` - Store values persistently during disconnection
+- `interval` - Periodic evaluation of control logic
+- `time.sntp` - Time synchronization (optional)
+- `on_connect`/`on_disconnect` - Handle WiFi events
+- `on_shutdown` - Safe shutdown procedure
+- `script` - Reusable logic blocks
+
+**Key Variables:**
+- IAC: Master enable (boolean from HA)
+- ITO: Target temperature (float from HA)
+- IMX: Max temp difference for turn-ON (float from HA)
+- IMI: Min temp difference for turn-OFF (float from HA)
+- SAG: Current water temp (float from sensor)
+- SCL: Current heater temp (float from sensor)
+
+**Safety Considerations:**
+- Existing timers already implemented (1h pump, 8h heater)
+- Must respect these timeouts in control logic
+- Turn off pumps on ESP32 shutdown
+- Continue operation with last-known values if HA unavailable
 
 ---
 
@@ -173,15 +265,15 @@ ha core logs | tail -50
 ## Session Resumption Notes
 
 **For next session:**
-1. Main task: Implement control logic in esp32-pileta.yaml
-2. Reference: instructions.md for complete requirements
-3. Test: Validate YAML before deploying
-4. Deploy: Via ESPHome Dashboard
-5. Monitor: Logs in ESPHome Dashboard
-6. Document: Update this file with progress
+1. **Start with Phase 1:** Add Home Assistant input entities to ESP32
+2. **Reference:** instructions.md for requirements, implementation plan above
+3. **Approach:** Implement incrementally, test each phase before moving to next
+4. **Testing:** Validate YAML syntax after each change
+5. **Deploy:** Via ESPHome Dashboard when ready
+6. **Document:** Check off tasks in implementation plan as completed
 
-**Current blockers:** None - ready to implement control logic
+**Current blockers:** None - detailed plan ready, can begin implementation
 
 ---
 
-**Last commit:** 081fbec - "Create CLAUDE.md and clean up redundant files"
+**Last commit:** 36fcb48 - "Reorganize README and PROJECT_STATUS to eliminate overlap"
