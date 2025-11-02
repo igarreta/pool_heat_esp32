@@ -170,6 +170,88 @@ globals:
     initial_value: '2.0'
 
 
+# Control logic - Evaluate heating conditions every 30 seconds
+interval:
+  - interval: 30s
+    then:
+      - lambda: |-
+          // Get current values
+          bool habilitada = id(calefaccion_habilitada);
+          float temp_agua = id(temperatura_agua).state;
+          float temp_calefactor = id(temperatura_calefactor).state;
+          float objetivo = id(temp_objetivo);
+          float max_diff = id(temp_max_diff);
+          float min_diff = id(temp_min_diff);
+          bool calefaccion_on = id(pileta_calefaccion_completa).state;
+
+          // Check if we have valid sensor readings
+          if (isnan(temp_agua) || isnan(temp_calefactor)) {
+            ESP_LOGW("control_logic", "Sensores no disponibles - esperando lecturas");
+            return;
+          }
+
+          ESP_LOGD("control_logic", "Estado: IAC=%s, SAG=%.1f°C, SCL=%.1f°C, ITO=%.1f°C, IMX=%.1f°C, IMI=%.1f°C, Calef=%s",
+                   habilitada ? "ON" : "OFF",
+                   temp_agua,
+                   temp_calefactor,
+                   objetivo,
+                   max_diff,
+                   min_diff,
+                   calefaccion_on ? "ON" : "OFF");
+
+          // Turn OFF conditions (ANY condition triggers stop)
+          bool should_turn_off = false;
+
+          if (!habilitada) {
+            ESP_LOGI("control_logic", "Apagar: IAC deshabilitada");
+            should_turn_off = true;
+          } else if (temp_agua >= objetivo) {
+            ESP_LOGI("control_logic", "Apagar: Temperatura objetivo alcanzada (%.1f >= %.1f)", temp_agua, objetivo);
+            should_turn_off = true;
+          } else if (temp_calefactor <= (temp_agua + min_diff)) {
+            ESP_LOGI("control_logic", "Apagar: Calefactor insuficiente (%.1f <= %.1f + %.1f)",
+                     temp_calefactor, temp_agua, min_diff);
+            should_turn_off = true;
+          }
+
+          if (should_turn_off && calefaccion_on) {
+            ESP_LOGI("control_logic", ">>> APAGANDO CALEFACCION <<<");
+            id(pileta_calefaccion_completa).turn_off();
+            return;
+          }
+
+          // Turn ON conditions (ALL conditions must be true)
+          bool should_turn_on = false;
+
+          if (habilitada &&
+              temp_agua < (objetivo - 0.5) &&  // Dead zone of 0.5°C
+              temp_calefactor > (temp_agua + max_diff)) {
+            should_turn_on = true;
+            ESP_LOGI("control_logic", "Condiciones para encender cumplidas:");
+            ESP_LOGI("control_logic", "  - IAC habilitada: SI");
+            ESP_LOGI("control_logic", "  - SAG < (ITO - 0.5): %.1f < %.1f = SI", temp_agua, objetivo - 0.5);
+            ESP_LOGI("control_logic", "  - SCL > (SAG + IMX): %.1f > %.1f = SI", temp_calefactor, temp_agua + max_diff);
+          }
+
+          if (should_turn_on && !calefaccion_on) {
+            ESP_LOGI("control_logic", ">>> ENCENDIENDO CALEFACCION <<<");
+            id(pileta_calefaccion_completa).turn_on();
+            return;
+          }
+
+          // Log reason for not changing state
+          if (!habilitada) {
+            ESP_LOGD("control_logic", "No cambio: IAC deshabilitada");
+          } else if (calefaccion_on) {
+            ESP_LOGD("control_logic", "No cambio: Calefaccion ya encendida, condiciones para apagar no cumplidas");
+          } else if (temp_agua >= (objetivo - 0.5)) {
+            ESP_LOGD("control_logic", "No cambio: Temperatura cerca del objetivo (%.1f >= %.1f)",
+                     temp_agua, objetivo - 0.5);
+          } else if (temp_calefactor <= (temp_agua + max_diff)) {
+            ESP_LOGD("control_logic", "No cambio: Calefactor insuficiente (%.1f <= %.1f)",
+                     temp_calefactor, temp_agua + max_diff);
+          }
+
 switch:
   - platform: gpio
     pin: GPIO2
@@ -177,10 +259,10 @@ switch:
     id: pileta_bomba_esp
     on_turn_on:
       then:
-        # - logger.log: "GPIO2 encendido. Temporizador iniciado para apagar en 1 hora."
+        - logger.log: "Bomba pileta encendida - Temporizador 1 hora iniciado"
         - delay: 1h
         - switch.turn_off: pileta_bomba_esp
-        # - logger.log: "GPIO2 apagado automáticamente después de 1 hora."
+        - logger.log: "Bomba pileta apagada automáticamente después de 1 hora"
 
   - platform: gpio
     pin: GPIO16

@@ -1,7 +1,7 @@
 # Project Status - Pool Heat ESP32
 
 **Last Updated:** 2025-11-02
-**Current Phase:** Phase 1 complete - Ready for Phase 2 (Core Control Logic)
+**Current Phase:** Phase 2 complete - Ready for Phase 3 (Time-Based Control) or Phase 4 (Disconnection Handling)
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
@@ -34,6 +34,14 @@
    - ✅ Configured on_value automations for real-time updates
    - ✅ Added logging for all parameter changes
 
+4. **Phase 2 Implementation (2025-11-02)**
+   - ✅ Added interval component (30s evaluation cycle)
+   - ✅ Implemented turn-ON logic with ALL conditions check
+   - ✅ Implemented turn-OFF logic with ANY condition check
+   - ✅ Implemented 0.5°C dead zone to prevent rapid cycling
+   - ✅ Added sensor validation (NaN checks)
+   - ✅ Added comprehensive logging at DEBUG, INFO, and WARNING levels
+
 ### 📋 Implementation Plan
 
 #### Phase 1: Add Home Assistant Input Entities (ESPHome side) ✅ COMPLETE
@@ -59,24 +67,37 @@
 
 ---
 
-#### Phase 2: Implement Core Control Logic
+#### Phase 2: Implement Core Control Logic ✅ COMPLETE
 **Goal:** Create interval component to evaluate heating conditions and control relays
 
 **Tasks:**
-- [ ] Add `interval` component (check every 30 seconds)
-- [ ] Implement turn-ON logic:
+- [x] Add `interval` component (check every 30 seconds)
+- [x] Implement turn-ON logic:
   - Check IAC is enabled (true)
   - Check SAG < (ITO - 0.5°C) — dead zone
   - Check SCL > (SAG + IMX) — heater sufficiently hot
   - If ALL true: turn on `pileta_calefaccion_completa`
-- [ ] Implement turn-OFF logic:
+- [x] Implement turn-OFF logic:
   - Check SAG ≥ ITO — target reached
   - Check SCL ≤ (SAG + IMI) — heater too cold
   - Check IAC is disabled
   - If ANY true: turn off `pileta_calefaccion_completa`
-- [ ] Add logging for decision points
+- [x] Add logging for decision points
 
 **Expected outcome:** Basic heating control works based on temperature and configuration
+
+**Implementation details:**
+- Added `interval` component running every 30 seconds
+- Comprehensive lambda function evaluates all conditions
+- Turn-OFF logic: checks ANY condition (IAC disabled, temp reached, heater too cold)
+- Turn-ON logic: checks ALL conditions (IAC enabled, below target with dead zone, heater hot enough)
+- Dead zone implemented: SAG < (ITO - 0.5°C) for turn-ON, SAG ≥ ITO for turn-OFF
+- Validates sensor readings (checks for NaN values)
+- Extensive logging at multiple levels:
+  - DEBUG: Current state every cycle
+  - INFO: Decision reasoning and state changes
+  - WARNING: Missing sensor data
+- Controls existing `pileta_calefaccion_completa` switch (which manages both pumps)
 
 ---
 
@@ -279,14 +300,16 @@ ha core logs | tail -50
 ## Session Resumption Notes
 
 **For next session:**
-1. **Start with Phase 2:** Implement core control logic with interval component
-2. **What's ready:** HA input entities are configured, globals store values
-3. **Next task:** Add interval component to evaluate heating conditions every 30s
-4. **Testing:** Can test Phase 1 by deploying current YAML and verifying HA values are received
-5. **Deploy:** Ready to deploy Phase 1 to ESP32 via ESPHome Dashboard
-6. **Document:** Update this file after Phase 2 implementation
+1. **Choose next phase:**
+   - **Option A:** Phase 3 (Time-Based Control) - Add 18:00 cutoff with SNTP time sync
+   - **Option B:** Skip to Phase 4 (Disconnection Handling) - Add WiFi event handlers
+   - **Option C:** Deploy and test Phases 1+2 before continuing
+2. **What's ready:** Core control logic is complete and functional
+3. **Recommendation:** Skip Phase 3 if WiFi is too unreliable for SNTP, proceed to Phase 4
+4. **Testing:** Ready to deploy to ESP32 and test basic heating control
+5. **Deploy:** Copy YAML to ESPHome Dashboard, compile, and flash
 
-**Current blockers:** None - Phase 1 complete, ready for Phase 2
+**Current blockers:** None - Core functionality complete, ready for enhancement or testing
 
 ---
 
