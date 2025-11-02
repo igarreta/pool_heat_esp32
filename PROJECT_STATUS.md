@@ -1,7 +1,7 @@
 # Project Status - Pool Heat ESP32
 
 **Last Updated:** 2025-11-02
-**Current Phase:** Planning complete - Ready to implement control logic
+**Current Phase:** Phase 1 complete - Ready for Phase 2 (Core Control Logic)
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
@@ -28,20 +28,34 @@
    - ✅ MQTT integration configured
    - ✅ Home Assistant API configured with encryption
 
+3. **Phase 1 Implementation (2025-11-02)**
+   - ✅ Added Home Assistant input entities (IAC, ITO, IMX, IMI)
+   - ✅ Added global variables with persistence for offline operation
+   - ✅ Configured on_value automations for real-time updates
+   - ✅ Added logging for all parameter changes
+
 ### 📋 Implementation Plan
 
-#### Phase 1: Add Home Assistant Input Entities (ESPHome side)
+#### Phase 1: Add Home Assistant Input Entities (ESPHome side) ✅ COMPLETE
 **Goal:** Subscribe to HA input entities and store values locally on ESP32
 
 **Tasks:**
-- [ ] Add `homeassistant` text sensor for IAC (input_boolean.activar_calefaccion_pileta)
-- [ ] Add `homeassistant` sensor for ITO (input_number.pileta_temp_objetivo)
-- [ ] Add `homeassistant` sensor for IMX (input_number.pileta_temp_max_diff)
-- [ ] Add `homeassistant` sensor for IMI (input_number.pileta_temp_min_diff)
-- [ ] Configure sensors to update on HA state change
-- [ ] Add globals to store last-known values for offline operation
+- [x] Add `homeassistant` text sensor for IAC (input_boolean.activar_calefaccion_pileta)
+- [x] Add `homeassistant` sensor for ITO (input_number.pileta_temp_objetivo)
+- [x] Add `homeassistant` sensor for IMX (input_number.pileta_temp_max_diff)
+- [x] Add `homeassistant` sensor for IMI (input_number.pileta_temp_min_diff)
+- [x] Configure sensors to update on HA state change
+- [x] Add globals to store last-known values for offline operation
 
 **Expected outcome:** ESP32 can read and store HA configuration values
+
+**Implementation details:**
+- Added 3 homeassistant sensors for numeric inputs (ITO, IMX, IMI)
+- Added 1 homeassistant text_sensor for boolean input (IAC)
+- Each sensor has `on_value` automation to update corresponding global
+- Globals configured with `restore_value: yes` for persistence across reboots
+- Initial values set as sensible defaults (ITO=28°C, IMX=5°C, IMI=2°C, IAC=false)
+- Added logging for all parameter updates
 
 ---
 
@@ -265,14 +279,14 @@ ha core logs | tail -50
 ## Session Resumption Notes
 
 **For next session:**
-1. **Start with Phase 1:** Add Home Assistant input entities to ESP32
-2. **Reference:** instructions.md for requirements, implementation plan above
-3. **Approach:** Implement incrementally, test each phase before moving to next
-4. **Testing:** Validate YAML syntax after each change
-5. **Deploy:** Via ESPHome Dashboard when ready
-6. **Document:** Check off tasks in implementation plan as completed
+1. **Start with Phase 2:** Implement core control logic with interval component
+2. **What's ready:** HA input entities are configured, globals store values
+3. **Next task:** Add interval component to evaluate heating conditions every 30s
+4. **Testing:** Can test Phase 1 by deploying current YAML and verifying HA values are received
+5. **Deploy:** Ready to deploy Phase 1 to ESP32 via ESPHome Dashboard
+6. **Document:** Update this file after Phase 2 implementation
 
-**Current blockers:** None - detailed plan ready, can begin implementation
+**Current blockers:** None - Phase 1 complete, ready for Phase 2
 
 ---
 

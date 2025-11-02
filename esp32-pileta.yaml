@@ -91,7 +91,85 @@ sensor:
     name: "Señal WiFi ESP32 Pileta"
     update_interval: 60s
 
-    
+  # Home Assistant Input Entities - Configuration parameters
+  - platform: homeassistant
+    id: ha_temp_objetivo
+    entity_id: input_number.pileta_temp_objetivo
+    name: "HA Temperatura Objetivo (ITO)"
+    on_value:
+      then:
+        - globals.set:
+            id: temp_objetivo
+            value: !lambda 'return x;'
+        - logger.log:
+            format: "Temperatura objetivo actualizada: %.1f°C"
+            args: ['x']
+
+  - platform: homeassistant
+    id: ha_temp_max_diff
+    entity_id: input_number.pileta_temp_max_diff
+    name: "HA Temp Max Diff (IMX)"
+    on_value:
+      then:
+        - globals.set:
+            id: temp_max_diff
+            value: !lambda 'return x;'
+        - logger.log:
+            format: "Diferencia máxima actualizada: %.1f°C"
+            args: ['x']
+
+  - platform: homeassistant
+    id: ha_temp_min_diff
+    entity_id: input_number.pileta_temp_min_diff
+    name: "HA Temp Min Diff (IMI)"
+    on_value:
+      then:
+        - globals.set:
+            id: temp_min_diff
+            value: !lambda 'return x;'
+        - logger.log:
+            format: "Diferencia mínima actualizada: %.1f°C"
+            args: ['x']
+
+# Text sensor for boolean input from HA
+text_sensor:
+  - platform: homeassistant
+    id: ha_activar_calefaccion
+    entity_id: input_boolean.activar_calefaccion_pileta
+    name: "HA Activar Calefaccion (IAC)"
+    on_value:
+      then:
+        - globals.set:
+            id: calefaccion_habilitada
+            value: !lambda |-
+              return (x == "on" || x == "true");
+        - logger.log:
+            format: "Calefacción habilitada: %s"
+            args: ['x.c_str()']
+
+# Global variables to store last known values for offline operation
+globals:
+  - id: calefaccion_habilitada
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+
+  - id: temp_objetivo
+    type: float
+    restore_value: yes
+    initial_value: '28.0'
+
+  - id: temp_max_diff
+    type: float
+    restore_value: yes
+    initial_value: '5.0'
+
+  - id: temp_min_diff
+    type: float
+    restore_value: yes
+    initial_value: '2.0'
+
+
 switch:
   - platform: gpio
     pin: GPIO2
