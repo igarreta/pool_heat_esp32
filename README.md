@@ -1,161 +1,142 @@
 # Pool Heat ESP32 Project
 
-## Project Overview
-ESPHome-based pool heating controller using ESP32 for Home Assistant integration.
+ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant integration.
 
-## Configuration Files
+## Overview
 
-### Main Configuration
-- **esp32-pileta-hybrid.yaml**: Main ESPHome configuration
-  - Board: ESP32-DevKit
-  - Framework: Arduino
-  - Status: ✅ Validated successfully
+**Architecture:** Hybrid control system
+- **ESP32:** Autonomous heating control logic (due to unreliable WiFi)
+- **Home Assistant:** Configuration interface and monitoring dashboard
+- **Communication:** MQTT + Home Assistant API
 
-### Secrets Management
-- **secrets.yaml**: WiFi credentials storage
-  - Location: `secrets.yaml`
-  - Contains: `wifi_ssid` and `wifi_password`
-  - Status: Template created - needs configuration
-
-## Setup History
-
-### Phase 1: Configuration Setup (2025-10-24)
-1. ✅ Created `secrets.yaml` file with WiFi credential placeholders
-2. ⏳ Update `secrets.yaml` with actual WiFi credentials
-
-
-### Phase 2: Firmware Compilation
-**Note**: Compilation on Home Assistant host failed due to memory constraints
-
-
-## Compilation Methods
-
-### Method 1: Home Assistant ESPHome Dashboard (Recommended)
-The ESPHome add-on in Home Assistant provides a web interface optimized for compilation.
-
-**Steps**:
-1. Open Home Assistant
-2. Navigate to **Settings** → **Add-ons** → **ESPHome**
-3. Click **Open Web UI**
-4. Copy `esp32-pileta-hybrid.yaml` to `/config/esphome/` directory
-5. Copy `secrets.yaml` to `/config/esphome/` directory
-6. Click on the device in the dashboard
-7. Click **Install** → **Manual download** (or **Wireless** if device is already online)
-8. Download the compiled `.bin` file or install directly
-
-**Advantages**:
-- Optimized for Home Assistant environment
-- Built-in OTA updates
-- Automatic device discovery
-- Log viewing
-
-
-
-### 3. Home Assistant Integration
-1. Navigate to **Settings** → **Devices & Services**
-2. Look for **ESPHome** discovered device
-3. Click **Configure**
-4. Add to Home Assistant
-
-### 4. Test Functionality
-- Verify sensor readings
-- Test control outputs
-- Check entity states in Home Assistant
-
-## Project Structure
-```
-pool_heat_esp32/
-├── esp32-pileta-hybrid.yaml       # Main configuration (to be added)
-├── secrets.yaml                    # WiFi credentials
-├── README.md                       # This file
-├── PROJECT_STATUS.md              # Current project status
-├── docs/
-│   ├── COMPILATION_GUIDE.md       # Detailed build instructions
-│   └── SHELL_TIPS.md              # Shell tips and troubleshooting
-└── log/                            # Log files
-```
-
-## Important Notes
-
-### GPIO Warning
-- **GPIO2** is a strapping PIN - use with care for I/O operations
-- Current configuration uses GPIO2; ensure this doesn't conflict with boot mode
-
-### Security
-- `secrets.yaml` contains sensitive credentials
-- Never commit `secrets.yaml` to version control
-- Keep WiFi passwords secure
-
-### Memory Requirements
-- Direct compilation on Home Assistant host: ❌ Not recommended (insufficient memory)
-- ESPHome Dashboard: ✅ Recommended (optimized for HA)
-- Local compilation: ✅ Requires 8GB+ RAM
-- Web-based compilation: ✅ No local requirements
-
-## Troubleshooting
-
-### Configuration Validation
-```bash
-esphome config esp32-pileta-hybrid.yaml
-```
-
-### Clean Build Cache
-```bash
-rm -rf .esphome/
-```
-
-### Check System Resources
-```bash
-free -h
-df -h
-```
-
-### View Compilation Logs
-```bash
-cat log/compile.log
-```
-
-## Resources
-- [ESPHome Documentation](https://esphome.io/)
-- [ESPHome Web](https://web.esphome.io/)
-- [Home Assistant ESPHome Integration](https://www.home-assistant.io/integrations/esphome/)
-- [ESP32 Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
+**Hardware:** ESP32-DevKit (Arduino framework)
+**Location:** Buenos Aires, Argentina
+**Home Assistant:** `hassio@192.168.1.7` (Proxmox VM)
+**MQTT Broker:** `192.168.1.8`
 
 ## Hardware Configuration
 
 ### Sensors
 - **3x Dallas DS18B20 Temperature Sensors** (One-Wire on GPIO25)
   - Water temperature: `0xd81c77d446f18a28` (30s updates)
-  - Roof box temperature: `0x65011447d4f2aa28` (30s updates)  
+  - Roof box temperature: `0x65011447d4f2aa28` (30s updates)
   - Heater temperature: `0xe0011448ab01aa28` (30s updates)
-- **Light Sensor** (ADC on GPIO32)
-  - Roof illumination monitoring (60s updates)
+- **Light Sensor** (ADC on GPIO32) - Roof illumination (60s updates)
 - **WiFi Signal Strength** (60s updates)
 
 ### Control Outputs
-- **GPIO2**: Pool circulation pump relay
-  - Auto-shutoff: 1 hour after activation
-- **GPIO16**: Pool heater relay
-  - Auto-shutoff: 8 hours after activation
-- **Virtual Switch**: Combined heating mode
-  - Activates both pump + heater
-  - Auto-shutoff: 8 hours after activation
+- **GPIO2:** Pool circulation pump relay (1-hour auto-shutoff)
+- **GPIO16:** Pool heater relay (8-hour auto-shutoff)
+- **Virtual Switch:** Combined heating mode - activates pump + heater (8-hour auto-shutoff)
+
+**⚠️ GPIO2 Warning:** Strapping pin - monitor boot behavior
 
 ### Communication
-- **Home Assistant API**: Encrypted connection
-- **MQTT**: Publishes sensor data to broker at `192.168.1.8`
-  - Topics: `pool_heat/temp/water`, `pool_heat/temp/roof`, `pool_heat/temp/heater`, `pool_heat/ligth/roof`
-- **Fallback WiFi AP**: "Esp32-Pileta Fallback Hotspot" (activates if main WiFi fails)
+- **Home Assistant API:** Encrypted connection
+- **MQTT Topics:**
+  - `pool_heat/temp/water`
+  - `pool_heat/temp/roof`
+  - `pool_heat/temp/heater`
+  - `pool_heat/light/roof`
+- **Fallback WiFi AP:** "Esp32-Pileta Fallback Hotspot" (password: KHIUDZeptBI2)
 
-## Status Summary
-- ✅ Project structure recreated
-- ✅ Main configuration file restored (esp32-pileta-hybrid.yaml)
-- ⏳ Need to update secrets.yaml with actual credentials
-- 📋 Ready for validation and compilation
+## Project Structure
 
-## Next Steps
-1. ✅ ~~Add your ESP32 configuration file (`esp32-pileta-hybrid.yaml`)~~ COMPLETE
-2. Update `secrets.yaml` with your WiFi credentials
-3. Copy files to Home Assistant: `scp esp32-pileta-hybrid.yaml hassio@192.168.1.7:/config/esphome/`
-4. Validate configuration: `esphome config esp32-pileta-hybrid.yaml`
-5. Choose compilation method and flash firmware
+```
+pool_heat_esp32/
+├── esp32-pileta.yaml           # Main ESPHome configuration
+├── instructions.md             # Control logic requirements
+├── README.md                   # This file
+├── PROJECT_STATUS.md           # Development status and session memory
+├── CLAUDE.md                   # Claude Code guidance
+├── WARP_HA_DEBUG.md           # Home Assistant debugging procedures
+├── .gitignore                  # Protects secrets and build artifacts
+├── LICENSE                     # MIT License
+├── docs/
+│   ├── COMPILATION_GUIDE.md   # Detailed compilation instructions
+│   └── SHELL_TIPS.md          # Shell troubleshooting
+└── log/                        # Log output directory
+```
+
+## Getting Started
+
+### 1. Copy Configuration to Home Assistant
+
+```powershell
+# From Windows PowerShell
+scp esp32-pileta.yaml hassio@192.168.1.7:/config/esphome/
+```
+
+Or copy YAML content via clipboard and paste into ESPHome Dashboard.
+
+### 2. Configure WiFi Credentials
+
+- WiFi secrets are managed in ESPHome Dashboard UI
+- Navigate to: **Settings → Add-ons → ESPHome → Open Web UI**
+- Edit device configuration to add WiFi SSID and password
+
+### 3. Compile and Flash Firmware
+
+1. Open ESPHome Dashboard in Home Assistant
+2. Click on device card
+3. Click **Install** and choose method:
+   - **Wirelessly** (if already flashed)
+   - **Plug into this computer** (USB for first flash)
+   - **Manual download** (download .bin file)
+
+### 4. Monitor and Test
+
+- View logs in ESPHome Dashboard
+- Verify sensor readings in Home Assistant
+- Test control outputs
+
+## Important Notes
+
+### Security
+- WiFi credentials managed in ESPHome Dashboard (not in Git)
+- API encryption key and OTA password stored in YAML
+- Never commit sensitive credentials
+
+### Compilation
+- **Do NOT compile on HA host directly** (memory constraints)
+- **Use ESPHome Dashboard exclusively**
+- First flash requires USB connection
+- Subsequent updates can use OTA
+
+### Connectivity
+- ESP32 WiFi is 2.4GHz only
+- WiFi connection is unstable by design - ESP32 operates autonomously
+- Fallback AP activates if main WiFi fails
+
+## Troubleshooting
+
+### Configuration Validation
+```bash
+esphome config esp32-pileta.yaml
+```
+
+### WiFi Connection Issues
+- Verify 2.4GHz network
+- Check credentials in ESPHome Dashboard
+- Monitor logs for connection status
+- Use fallback AP if needed
+
+### GPIO2 Boot Issues
+- GPIO2 is a strapping pin
+- If boot fails, may need to reassign pin
+- Monitor serial output during boot
+
+### Home Assistant Debugging
+See `WARP_HA_DEBUG.md` for comprehensive HA troubleshooting procedures.
+
+## Resources
+
+- [ESPHome Documentation](https://esphome.io/)
+- [ESPHome Web Tool](https://web.esphome.io/)
+- [Home Assistant ESPHome Integration](https://www.home-assistant.io/integrations/esphome/)
+- [ESP32 Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
+- [GitHub Repository](https://github.com/igarreta/pool_heat_esp32)
+
+## License
+
+MIT License - See LICENSE file for details
