@@ -205,11 +205,46 @@
 
 ---
 
-#### Future Enhancements (After Extended Testing)
+#### Phase 6: Skimmer Automation Logic (Next Phase)
+**Goal:** Implement autonomous skimmer operation based on daily filter runtime
+
+**Background:**
+- Currently: Skimmer (pileta_bomba_esp) managed manually via Home Assistant
+- Current behavior: 1-hour auto-shutoff timer (for safety during WiFi outages)
+- Daily runtime tracking already implemented: `bomba_horas_hoy` sensor
+
+**Requirements:**
+- Check daily pump runtime at specific time(s) during the day
+- If runtime < minimum required hours, activate skimmer mode
+- Run skimmer for sufficient time to meet daily filter requirement
+- Respect 1-hour auto-shutoff safety timer (may require multiple cycles)
+- Do NOT interfere with heating mode operations
+
+**Design Considerations:**
+- Minimum daily runtime requirement (TBD by user)
+- Time(s) to check and activate skimmer (e.g., 17:00, 20:00)
+- Skimmer cycle duration (respects 1-hour timer)
+- Priority: Heating mode takes precedence over skimmer
+- Safety: Maintain existing 1-hour auto-shutoff for HA-controlled operation
+
+**Implementation Tasks:**
+- [ ] Add HA input: minimum daily pump hours required
+- [ ] Add time-based check interval(s) for skimmer activation
+- [ ] Implement logic: if `bomba_horas_hoy` < minimum, start skimmer
+- [ ] Calculate remaining runtime needed
+- [ ] Manage multiple 1-hour cycles if needed
+- [ ] Ensure heating mode flag prevents skimmer interference
+- [ ] Add logging for skimmer activation decisions
+- [ ] Test interaction with heating mode
+
+**Expected Outcome:** ESP32 autonomously maintains minimum daily filter runtime
+
+---
+
+#### Future Enhancements (After Skimmer Implementation)
 - [x] ~~Implement runtime tracking (daily heating hours)~~ - COMPLETE
 - [x] ~~Add parameter validation alert (IMX ≥ IMI + 1°C)~~ - COMPLETE
-- [ ] Implement skimmer automation based on daily runtime
-- [ ] Add 18:00 time-based shutoff (Phase 4B)
+- [ ] Add 18:00 time-based shutoff for heating (Phase 4B)
 - [ ] Create HA dashboard for monitoring and visualization
 - [ ] Add historical logging to track efficiency
 - [ ] Optimize heating schedule based on solar patterns

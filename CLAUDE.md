@@ -18,9 +18,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Design Decision:** Logic must run on ESP32 due to unstable WiFi connection.
 
-- **ESP32 Role:** Autonomous heating control logic, sensor reading, relay control
+- **ESP32 Role:** Autonomous heating control logic, sensor reading, relay control, skimmer automation
 - **Home Assistant Role:** Configuration interface (input entities), status display, optional override controls
 - **Communication:** ESP32 pulls configuration from HA input entities, reports status via MQTT + HA API
+
+**Current Status:** Production-ready heating control with comprehensive safety system. Next phase: Skimmer automation.
 
 ### Hardware Configuration
 
@@ -100,6 +102,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ESP32 continues autonomously with last-known-good values
 - Parameters update automatically when WiFi/HA reconnects
 - No action required - fully automatic
+
+## Skimmer Automation (Phase 6 - Next Implementation)
+
+**Purpose:** Ensure minimum daily filter runtime for pool water quality
+
+**Current Situation:**
+- Skimmer (pileta_bomba_esp) currently controlled manually via HA
+- 1-hour auto-shutoff timer active when NOT in heating mode
+- Daily runtime counter (`bomba_horas_hoy`) already tracking pump hours
+- Midnight reset via time synchronization already implemented
+
+**Requirements for Implementation:**
+
+**New HA Input Entity Needed:**
+- `input_number.pileta_horas_minimas_diarias` - Minimum required daily pump hours
+
+**Logic to Implement:**
+1. Check daily runtime at specific time(s) (TBD: e.g., 17:00, 20:00)
+2. Calculate: `runtime_deficit = minimum_hours - bomba_horas_hoy`
+3. If deficit > 0 and heating NOT active, start skimmer
+4. Run skimmer for calculated time (respecting 1-hour safety timer)
+5. May require multiple 1-hour cycles to meet deficit
+
+**Critical Constraints:**
+- **NEVER interfere with heating mode** - heating has absolute priority
+- Check `bomba_modo_calefaccion` flag before activating skimmer
+- Respect existing 1-hour auto-shutoff safety mechanism
+- Work within time platform synchronization
+- Handle WiFi disconnection gracefully
+
+**Design Considerations:**
+- What time(s) should skimmer check be performed? (User input needed)
+- How to handle partial completion if WiFi drops?
+- Should skimmer defer to heating mode or abort cycle?
+- Log skimmer activation decisions for monitoring
+
+**Implementation Strategy:**
+- Add time-based trigger(s) using existing `time` platform
+- Add lambda logic to calculate runtime deficit
+- Create skimmer activation conditions
+- Reuse existing 1-hour safety timer (already working)
+- Add logging for skimmer decisions
+
+**Expected Behavior:**
+- If heating runs for 4 hours and minimum is 6 hours → skimmer adds 2 hours
+- If heating hasn't run and minimum is 4 hours → skimmer runs 4 hours (4 cycles)
+- If heating is active → skimmer waits or defers
+- All operations logged for debugging
 
 ## Essential Commands
 
@@ -191,7 +241,10 @@ See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
 ### Current State
 - Main ESP32 configuration: `esp32-pileta.yaml`
 - Secrets managed in ESPHome Dashboard
-- Control logic not yet implemented (see instructions.md for requirements)
+- Heating control logic: ✅ COMPLETE (Phases 1-4A)
+- Daily runtime tracking: ✅ COMPLETE
+- Safety system: ✅ COMPLETE (Phase 4A)
+- Skimmer automation: ⏳ PLANNED (Phase 6 - Next)
 
 ### Typical Workflow
 
