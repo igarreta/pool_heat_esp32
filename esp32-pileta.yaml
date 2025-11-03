@@ -169,6 +169,11 @@ globals:
     restore_value: yes
     initial_value: '2.0'
 
+  - id: bomba_modo_calefaccion
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
 
 # Control logic - Evaluate heating conditions every 30 seconds
 interval:
@@ -261,8 +266,14 @@ switch:
       then:
         - logger.log: "Bomba pileta encendida - Temporizador 1 hora iniciado"
         - delay: 1h
-        - switch.turn_off: pileta_bomba_esp
-        - logger.log: "Bomba pileta apagada automáticamente después de 1 hora"
+        - if:
+            condition:
+              lambda: 'return !id(bomba_modo_calefaccion);'
+            then:
+              - switch.turn_off: pileta_bomba_esp
+              - logger.log: "Bomba pileta apagada automáticamente después de 1 hora (modo skimmer)"
+            else:
+              - logger.log: "Auto-apagado de bomba omitido: controlada por modo calefacción"
 
   - platform: gpio
     pin: GPIO16
@@ -286,14 +297,25 @@ switch:
         return false;
       }
     turn_on_action:
+      - globals.set:
+          id: bomba_modo_calefaccion
+          value: 'true'
+      - logger.log: "Modo calefacción: activando flag de control"
       - switch.turn_on: pileta_bomba_esp
       - switch.turn_on: pileta_calefaccion_esp
       - logger.log: "Modo calefacción activado: ambas bombas encendidas"
       - delay: 8h
       - switch.turn_off: pileta_bomba_esp
       - switch.turn_off: pileta_calefaccion_esp
+      - globals.set:
+          id: bomba_modo_calefaccion
+          value: 'false'
       - logger.log: "Modo calefacción apagado automáticamente después de 8 horas"
     turn_off_action:
+      - globals.set:
+          id: bomba_modo_calefaccion
+          value: 'false'
+      - logger.log: "Modo calefacción: desactivando flag de control"
       - switch.turn_off: pileta_bomba_esp
       - switch.turn_off: pileta_calefaccion_esp
       - logger.log: "Modo calefacción desactivado manualmente"
