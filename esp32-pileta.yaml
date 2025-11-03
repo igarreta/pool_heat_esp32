@@ -59,6 +59,8 @@ sensor:
     id: temperatura_agua
     on_value:
       then:
+        - lambda: |-
+            id(temp_agua_last_update) = millis();
         - mqtt.publish:
             topic: "pool_heat/temp/water"
             payload: !lambda |-
@@ -78,12 +80,14 @@ sensor:
               return String(id(temperatura_caja).state).c_str();
 
   - platform: dallas_temp
-    address: 0xe0011448ab01aa28 
+    address: 0xe0011448ab01aa28
     name: "temperatura calefactor"
     update_interval: 30s
     id: temperatura_calefactor
     on_value:
       then:
+        - lambda: |-
+            id(temp_calefactor_last_update) = millis();
         - mqtt.publish:
             topic: "pool_heat/temp/heater"
             payload: !lambda |-
@@ -220,6 +224,21 @@ globals:
     restore_value: no
     initial_value: '0.0'
 
+  - id: temp_agua_last_update
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+
+  - id: temp_calefactor_last_update
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+
+  - id: heating_start_time
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+
 
 # Control logic - Evaluate heating conditions every 30 seconds
 interval:
@@ -234,11 +253,75 @@ interval:
           float max_diff = id(temp_max_diff);
           float min_diff = id(temp_min_diff);
           bool calefaccion_on = id(pileta_calefaccion_completa).state;
+          unsigned long current_time = millis();
 
-          // Check if we have valid sensor readings
+          // SAFETY CHECK 1: Check if we have valid sensor readings (NaN)
           if (isnan(temp_agua) || isnan(temp_calefactor)) {
-            ESP_LOGW("control_logic", "Sensores no disponibles - esperando lecturas");
+            ESP_LOGW("safety", "Sensores no disponibles - esperando lecturas");
+            if (calefaccion_on) {
+              ESP_LOGE("safety", "Apagando calefacción por sensores inválidos");
+              id(pileta_calefaccion_completa).turn_off();
+            }
             return;
+          }
+
+          // SAFETY CHECK 2: Sensor range validation
+          if (temp_agua < 0.0 || temp_agua > 50.0) {
+            ESP_LOGE("safety", "Temperatura agua fuera de rango: %.1f°C", temp_agua);
+            if (calefaccion_on) {
+              ESP_LOGE("safety", "Apagando calefacción por sensor agua inválido");
+              id(pileta_calefaccion_completa).turn_off();
+            }
+            return;
+          }
+          if (temp_calefactor < 0.0 || temp_calefactor > 80.0) {
+            ESP_LOGE("safety", "Temperatura calefactor fuera de rango: %.1f°C", temp_calefactor);
+            if (calefaccion_on) {
+              ESP_LOGE("safety", "Apagando calefacción por sensor calefactor inválido");
+              id(pileta_calefaccion_completa).turn_off();
+            }
+            return;
+          }
+
+          // SAFETY CHECK 3: Sensor staleness detection (5 minutes = 300000ms)
+          if (id(temp_agua_last_update) > 0 &&
+              (current_time - id(temp_agua_last_update)) > 300000) {
+            ESP_LOGE("safety", "Sensor agua sin actualizar por >5 min");
+            if (calefaccion_on) {
+              ESP_LOGE("safety", "Apagando calefacción por sensor agua obsoleto");
+              id(pileta_calefaccion_completa).turn_off();
+            }
+            return;
+          }
+          if (id(temp_calefactor_last_update) > 0 &&
+              (current_time - id(temp_calefactor_last_update)) > 300000) {
+            ESP_LOGE("safety", "Sensor calefactor sin actualizar por >5 min");
+            if (calefaccion_on) {
+              ESP_LOGE("safety", "Apagando calefacción por sensor calefactor obsoleto");
+              id(pileta_calefaccion_completa).turn_off();
+            }
+            return;
+          }
+
+          // SAFETY CHECK 4: Pump state desync detection
+          if (calefaccion_on && (!id(pileta_bomba_esp).state || !id(pileta_calefaccion_esp).state)) {
+            ESP_LOGE("safety", "Desincronización detectada! Bomba=%s, Calefactor=%s",
+                     id(pileta_bomba_esp).state ? "ON" : "OFF",
+                     id(pileta_calefaccion_esp).state ? "ON" : "OFF");
+            ESP_LOGE("safety", "Apagando sistema completo");
+            id(pileta_calefaccion_completa).turn_off();
+            return;
+          }
+
+          // SAFETY CHECK 5: Independent runtime watchdog (8 hours = 28800000ms)
+          if (calefaccion_on && id(heating_start_time) > 0) {
+            unsigned long runtime = current_time - id(heating_start_time);
+            if (runtime > 28800000) {
+              ESP_LOGE("safety", "Watchdog: 8 horas de operación alcanzadas");
+              ESP_LOGE("safety", "Apagando por límite de tiempo independiente");
+              id(pileta_calefaccion_completa).turn_off();
+              return;
+            }
           }
 
           ESP_LOGD("control_logic", "Estado: IAC=%s, SAG=%.1f°C, SCL=%.1f°C, ITO=%.1f°C, IMX=%.1f°C, IMI=%.1f°C, Calef=%s",
@@ -355,6 +438,9 @@ switch:
       - globals.set:
           id: bomba_modo_calefaccion
           value: 'true'
+      - lambda: |-
+          id(heating_start_time) = millis();
+          ESP_LOGI("safety", "Watchdog iniciado - límite 8 horas");
       - logger.log: "Modo calefacción: activando flag de control"
       - switch.turn_on: pileta_bomba_esp
       - switch.turn_on: pileta_calefaccion_esp
@@ -365,11 +451,15 @@ switch:
       - globals.set:
           id: bomba_modo_calefaccion
           value: 'false'
+      - lambda: |-
+          id(heating_start_time) = 0;
       - logger.log: "Modo calefacción apagado automáticamente después de 8 horas"
     turn_off_action:
       - globals.set:
           id: bomba_modo_calefaccion
           value: 'false'
+      - lambda: |-
+          id(heating_start_time) = 0;
       - logger.log: "Modo calefacción: desactivando flag de control"
       - switch.turn_off: pileta_bomba_esp
       - switch.turn_off: pileta_calefaccion_esp
