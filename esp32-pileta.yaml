@@ -134,12 +134,20 @@ sensor:
     name: "HA Temp Max Diff (IMX)"
     on_value:
       then:
-        - globals.set:
-            id: temp_max_diff
-            value: !lambda 'return x;'
-        - logger.log:
-            format: "Diferencia máxima actualizada: %.1f°C"
-            args: ['x']
+        - lambda: |-
+            float new_max_diff = x;
+            float current_min_diff = id(temp_min_diff);
+            float min_allowed = current_min_diff + 1.0;
+
+            if (new_max_diff < min_allowed) {
+              ESP_LOGW("safety", "IMX (%.1f) < IMI + 1 (%.1f). Forzando IMX = %.1f",
+                       new_max_diff, min_allowed, min_allowed);
+              id(temp_max_diff) = min_allowed;
+            } else {
+              id(temp_max_diff) = new_max_diff;
+            }
+
+            ESP_LOGI("config", "Diferencia máxima actualizada: %.1f°C", id(temp_max_diff));
 
   - platform: homeassistant
     id: ha_temp_min_diff
@@ -147,12 +155,22 @@ sensor:
     name: "HA Temp Min Diff (IMI)"
     on_value:
       then:
-        - globals.set:
-            id: temp_min_diff
-            value: !lambda 'return x;'
-        - logger.log:
-            format: "Diferencia mínima actualizada: %.1f°C"
-            args: ['x']
+        - lambda: |-
+            float new_min_diff = x;
+            float current_max_diff = id(temp_max_diff);
+
+            // Update IMI
+            id(temp_min_diff) = new_min_diff;
+            ESP_LOGI("config", "Diferencia mínima actualizada: %.1f°C", new_min_diff);
+
+            // Check if IMX needs adjustment
+            float min_allowed_max = new_min_diff + 1.0;
+            if (current_max_diff < min_allowed_max) {
+              ESP_LOGW("safety", "IMX (%.1f) < IMI + 1 (%.1f). Forzando IMX = %.1f",
+                       current_max_diff, min_allowed_max, min_allowed_max);
+              id(temp_max_diff) = min_allowed_max;
+              ESP_LOGI("config", "Diferencia máxima ajustada a: %.1f°C", id(temp_max_diff));
+            }
 
 # Text sensor for boolean input from HA
 text_sensor:
