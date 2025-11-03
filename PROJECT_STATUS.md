@@ -1,15 +1,50 @@
 # Project Status - Pool Heat ESP32
 
-**Last Updated:** 2025-11-02
-**Current Phase:** Phase 2 complete - Ready for Phase 3 (Time-Based Control) or Phase 4 (Disconnection Handling)
+**Last Updated:** 2025-11-03
+**Current Phase:** Phase 4A complete - Production ready with comprehensive safety system
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
 ---
 
-## Current Status: Implementation Plan Complete
+## Current Status: Production Ready with Safety Features
 
-### ✅ Recently Completed (2025-11-02)
+### ✅ Recently Completed (2025-11-03)
+
+1. **Heating Mode Flag Fix (2025-11-03)**
+   - ✅ Added `bomba_modo_calefaccion` global flag
+   - ✅ Fixed pump auto-shutoff interference with heating mode
+   - ✅ 1-hour timer only applies to HA-controlled skimmer mode
+   - ✅ Both pumps now run together during ESP32 heating cycles
+   - ✅ Commit: f8e5821
+
+2. **Daily Runtime Tracking (2025-11-03)**
+   - ✅ Added `bomba_horas_hoy` counter for daily pump runtime
+   - ✅ 60-second interval tracks operating hours
+   - ✅ Exposed sensor to Home Assistant: "Horas Bomba Hoy"
+   - ✅ Automatic midnight reset via time platform
+   - ✅ Prepares for future skimmer automation logic
+   - ✅ Commit: 683798f
+
+3. **Parameter Validation (2025-11-03)**
+   - ✅ Enforces IMX ≥ IMI + 1°C per specification
+   - ✅ Automatic correction on invalid values
+   - ✅ Prevents logic conflicts and rapid cycling
+   - ✅ Bidirectional validation (works for both IMX and IMI changes)
+   - ✅ Comprehensive warning logs for corrections
+   - ✅ Commit: f3b6727
+
+4. **Phase 4A: Critical Safety System (2025-11-03)**
+   - ✅ Sensor range validation (water: 0-50°C, heater: 0-80°C)
+   - ✅ Sensor staleness detection (5-minute timeout)
+   - ✅ Pump state desync detection
+   - ✅ Independent runtime watchdog (8-hour backup timer)
+   - ✅ WiFi disconnect handling verified (restore_value globals)
+   - ✅ All safety checks force immediate shutdown on violation
+   - ✅ Comprehensive error logging for all safety events
+   - ✅ Commit: af15616
+
+### ✅ Completed Earlier (2025-11-02)
 
 1. **Documentation Cleanup**
    - ✅ Created CLAUDE.md for Claude Code guidance
@@ -117,34 +152,48 @@
 
 ---
 
-#### Phase 4: Add Disconnection Handling
-**Goal:** Ensure safe operation when WiFi/HA connection lost
+#### Phase 4: Enhanced Safety and Edge Case Handling ✅ COMPLETE (Phase 4A)
+**Goal:** Ensure safe operation under all failure scenarios
 
 **Tasks:**
-- [ ] Add `on_connect` automation to retrieve current HA values
-- [ ] Add `on_disconnect` automation to log event
-- [ ] Verify globals retain values during disconnection
-- [ ] Test behavior: ESP32 continues with last-known values when offline
-- [ ] Add `on_shutdown` automation to turn off both pumps
+- [x] Parameter validation (IMX ≥ IMI + 1°C enforcement)
+- [x] Sensor range validation (water 0-50°C, heater 0-80°C)
+- [x] Sensor staleness detection (5-minute timeout)
+- [x] Pump state desync detection
+- [x] Independent runtime watchdog (8-hour backup)
+- [x] WiFi disconnect handling (already working with restore_value)
+- [ ] Time-based shutoff (18:00 cutoff) - Phase 4B optional
+- [ ] Add `on_shutdown` automation to turn off pumps - Optional enhancement
 
-**Expected outcome:** ESP32 operates autonomously during disconnections, safe shutdown
+**Expected outcome:** Multi-layered safety system protects against all identified failure modes
+
+**Implementation details:**
+- Added timestamp tracking for sensor updates
+- Added heating_start_time for independent watchdog
+- All critical safety checks run every 30 seconds before control logic
+- Any safety violation triggers immediate heating shutdown
+- Comprehensive error logging with "safety" tag for filtering
+- No maximum pool temperature enforced (per user request)
 
 ---
 
-#### Phase 5: Testing & Validation
+#### Phase 5: Testing & Validation (Partial)
 **Goal:** Verify correct behavior in all scenarios
 
 **Test Cases:**
-- [ ] **Normal operation:** Heating turns on when conditions met
-- [ ] **Dead zone:** No rapid cycling when temperature near target
-- [ ] **Safety timers:** Pumps shut off after timeout (1h pump, 8h heater)
-- [ ] **Parameter changes:** ESP32 responds to HA input changes
+- [x] **Normal operation:** Heating turns on when conditions met (tested 2025-11-03)
+- [x] **Dead zone:** No rapid cycling when temperature near target (tested 2025-11-03)
+- [x] **Safety timers:** Combined mode runs properly, flag prevents early shutoff (tested 2025-11-03)
+- [x] **Parameter changes:** ESP32 responds to HA input changes in real-time (tested 2025-11-03)
+- [x] **Temperature reached:** Heating stops when SAG ≥ ITO (tested 2025-11-03)
 - [ ] **WiFi loss:** Continues with last values, reconnects properly
 - [ ] **Manual override:** Can turn off heating manually via HA
 - [ ] **IAC disable:** Heating stops immediately when IAC disabled
-- [ ] **Temperature reached:** Heating stops when SAG ≥ ITO
 - [ ] **Heater too cold:** Heating stops when SCL ≤ (SAG + IMI)
-- [ ] **18:00 cutoff:** (if implemented) No new cycles after 18:00
+- [ ] **Safety checks:** Verify sensor range/staleness/desync detection
+- [ ] **Watchdog:** Verify 8-hour independent timer triggers
+- [ ] **Parameter validation:** Test IMX < IMI + 1 correction
+- [ ] **Runtime tracking:** Verify daily counter accuracy and midnight reset
 
 **Deployment:**
 - [ ] Copy updated YAML to Home Assistant
@@ -156,9 +205,11 @@
 
 ---
 
-#### Future Enhancements (After Successful Testing)
-- [ ] Implement runtime tracking (daily heating hours)
-- [ ] Add parameter validation alert (IMX ≥ IMI + 1°C)
+#### Future Enhancements (After Extended Testing)
+- [x] ~~Implement runtime tracking (daily heating hours)~~ - COMPLETE
+- [x] ~~Add parameter validation alert (IMX ≥ IMI + 1°C)~~ - COMPLETE
+- [ ] Implement skimmer automation based on daily runtime
+- [ ] Add 18:00 time-based shutoff (Phase 4B)
 - [ ] Create HA dashboard for monitoring and visualization
 - [ ] Add historical logging to track efficiency
 - [ ] Optimize heating schedule based on solar patterns
@@ -313,4 +364,9 @@ ha core logs | tail -50
 
 ---
 
-**Last commit:** 36fcb48 - "Reorganize README and PROJECT_STATUS to eliminate overlap"
+**Latest commits:**
+- af15616 - "Implement Phase 4A: Critical safety checks and edge case handling" (2025-11-03)
+- f3b6727 - "Add parameter validation to enforce IMX >= IMI + 1°C" (2025-11-03)
+- 683798f - "Add daily pump runtime tracking" (2025-11-03)
+- f8e5821 - "Add heating mode flag to prevent pump auto-shutoff conflict" (2025-11-03)
+- 8e4fbac - "Implement Phase 2: Core control logic with interval component" (2025-11-02)

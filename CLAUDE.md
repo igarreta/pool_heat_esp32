@@ -69,18 +69,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. Time = 18:00 (if ESP32 has reliable time)
 
 **Parameter Validation:** IMX ≥ (IMI + 1°C) to prevent logic conflicts
+- Automatically enforced on ESP32
+- Invalid values are corrected with warning logs
+- Works bidirectionally (IMX or IMI changes trigger validation)
 
 **Safety Timers:**
-- Pump auto-shutoff: 1 hour
+- Pump auto-shutoff: 1 hour (only when NOT in heating mode)
 - Heater auto-shutoff: 8 hours
 - Combined mode auto-shutoff: 8 hours
-- Logic must account for these automatic shutdowns
+- Heating mode flag (`bomba_modo_calefaccion`) prevents premature pump shutoff
+- Independent watchdog timer provides backup 8-hour enforcement
+
+**Daily Runtime Tracking:**
+- Counter: `bomba_horas_hoy` tracks pump operation hours per day
+- Updates every 60 seconds when pump is ON
+- Resets automatically at midnight
+- Exposed to HA as sensor: "Horas Bomba Hoy"
+- Used for future skimmer automation logic
+
+**Comprehensive Safety System (Phase 4A):**
+- **Sensor range validation:** Water 0-50°C, heater 0-80°C
+- **Sensor staleness detection:** 5-minute timeout triggers shutdown
+- **Pump desync detection:** Verifies both pumps match expected state
+- **Independent watchdog:** Backup 8-hour timer via millis() tracking
+- **WiFi disconnect handling:** All parameters use restore_value for offline operation
+- All safety violations force immediate heating shutdown with error logs
 
 **ESP32 Disconnection Handling:**
-- Retrieve current values from Home Assistant at startup
-- Store values locally if HA unavailable
-- Update stored values when new values received
-- Turn off both pumps at shutdown
+- All critical parameters stored with `restore_value: yes`
+- ESP32 continues autonomously with last-known-good values
+- Parameters update automatically when WiFi/HA reconnects
+- No action required - fully automatic
 
 ## Essential Commands
 

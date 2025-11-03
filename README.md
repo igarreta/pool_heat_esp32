@@ -25,11 +25,45 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
 - **WiFi Signal Strength** (60s updates)
 
 ### Control Outputs
-- **GPIO2:** Pool circulation pump relay (1-hour auto-shutoff)
+- **GPIO2:** Pool circulation pump relay
+  - 1-hour auto-shutoff (only when NOT in heating mode)
+  - Heating mode flag prevents premature shutoff
 - **GPIO16:** Pool heater relay (8-hour auto-shutoff)
-- **Virtual Switch:** Combined heating mode - activates pump + heater (8-hour auto-shutoff)
+- **Virtual Switch:** "Calefaccion Completa (ESP32)"
+  - Combined heating mode - activates pump + heater together
+  - 8-hour auto-shutoff with independent watchdog backup
+  - Manages heating mode flag for pump protection
 
 **⚠️ GPIO2 Warning:** Strapping pin - monitor boot behavior
+
+## Features
+
+### Autonomous Heating Control
+- **Automatic Operation:** ESP32 evaluates heating conditions every 30 seconds
+- **Temperature Control:** Turns ON when water below target and heater sufficiently hot
+- **Dead Zone Logic:** 0.5°C hysteresis prevents rapid cycling
+- **Safety Shutdown:** Automatic stop when target reached or heater insufficient
+
+### Configuration Interface (Home Assistant)
+- **IAC (input_boolean):** Master enable/disable switch
+- **ITO (input_number):** Target pool temperature setpoint
+- **IMX (input_number):** Temperature delta to turn ON heating
+- **IMI (input_number):** Temperature delta to turn OFF heating
+
+### Daily Runtime Tracking
+- **Pump Hours Counter:** Tracks daily operation time
+- **Automatic Reset:** Midnight reset via time synchronization
+- **HA Integration:** "Horas Bomba Hoy" sensor for monitoring
+- **Future Use:** Enables skimmer automation based on filter runtime
+
+### Comprehensive Safety System
+- ✅ **Parameter Validation:** Enforces IMX ≥ IMI + 1°C automatically
+- ✅ **Sensor Range Validation:** Water 0-50°C, heater 0-80°C
+- ✅ **Staleness Detection:** 5-minute timeout for frozen sensors
+- ✅ **Pump Desync Detection:** Verifies both pumps match expected state
+- ✅ **Independent Watchdog:** Backup 8-hour timer prevents runaway operation
+- ✅ **WiFi Resilience:** Continues with last-known values during disconnection
+- All safety violations trigger immediate shutdown with error logging
 
 ### Communication
 - **Home Assistant API:** Encrypted connection

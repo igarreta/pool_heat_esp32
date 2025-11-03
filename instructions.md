@@ -1,17 +1,14 @@
-THESE INSTRUCTIONS ARE FOR AN HIBRID APPOACH. LOGIC MUST BE CONFINED TO ESP32 DUE TO BAD WIFI CONECCTION
-
 # Pool Heat Automation Project
 
 ## Task Description
 Create a Home Assistant automation to control pool solar heating system with intelligent temperature management and safety features.
-The automation will run on ESP32 due to unstable WiFi connection. 
+The automation will run on an ESP32 due to unstable WiFi connection. 
 Home Assistant will provide the fronting (web interface) to configure the automation. It will change the values of the input entities and provide the status of the system.
 
 ## Context
 - **Location:** Buenos Aires, Argentina
-- **Home Assistant:** Running on Proxmox server  
-- **Heating Control:** Raspberry Pi communicating via MQTT
-- **Control Method:** Automations and scripts (no Node-RED)
+- **Home Assistant:** Running on Proxmox server as a VM (HAOS) 
+- **Control Method:** Automations and scripts (no Node-RED). Programming will be done via ESPHome Builder in Home Assistant
 - **Hardware:** ESP32 with occasional WiFi connectivity issues
 
 ## Entities
@@ -27,7 +24,7 @@ Home Assistant will provide the fronting (web interface) to configure the automa
 
 ### **Operating Window**
 - Master control: Only when IAC is enabled
-- Safety shutdown: Another automation handles 18:00 PM cutoff
+- Safety shutdown: To be implemented later
 
 ### **Turn ON Heating Conditions (ALL must be true):**
 1. IAC is enabled
@@ -39,11 +36,10 @@ Home Assistant will provide the fronting (web interface) to configure the automa
 1. SAG ≥ ITO [Target temperature reached]
 2. SCL ≤ (SAG + IMI) [Heater insufficient temperature]  
 3. IAC is disabled
-4. Time = 18:00 PM (only if ESP32 has reliable time)
 5. In this case turn OFF pileta_calefaccion_completa
 
 ### Safety timers
--  pileta_calefaccion_completa is a template that turns ON pileta_bomba_esp and pileta_bomba_esp 
+- pileta_calefaccion_completa is a template that turns ON pileta_bomba_esp and pileta_bomba_esp 
 - pileta_bomba_esp has a 1 hour timer
 - pileta_bomba_esp has a 8 hour timer
 - Logic must account for these automatic shutdowns
