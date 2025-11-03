@@ -29,9 +29,23 @@ wifi:
     password: "KHIUDZeptBI2"
 
 captive_portal:
-  
+
 mqtt:
   broker: "192.168.1.8"
+
+# Time synchronization from Home Assistant
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      # Reset daily counter at midnight
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - lambda: |-
+              ESP_LOGI("runtime_tracker", "Reset diario: %.2f horas registradas ayer", id(bomba_horas_hoy));
+              id(bomba_horas_hoy) = 0.0;
 
 one_wire:
   - platform: gpio
@@ -90,6 +104,15 @@ sensor:
   - platform: wifi_signal
     name: "Señal WiFi ESP32 Pileta"
     update_interval: 60s
+
+  # Runtime tracking sensor
+  - platform: template
+    name: "Horas Bomba Hoy"
+    id: sensor_horas_bomba_hoy
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return id(bomba_horas_hoy);'
 
   # Home Assistant Input Entities - Configuration parameters
   - platform: homeassistant
@@ -174,6 +197,11 @@ globals:
     restore_value: no
     initial_value: 'false'
 
+  - id: bomba_horas_hoy
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
 
 # Control logic - Evaluate heating conditions every 30 seconds
 interval:
@@ -255,6 +283,15 @@ interval:
           } else if (temp_calefactor <= (temp_agua + max_diff)) {
             ESP_LOGD("control_logic", "No cambio: Calefactor insuficiente (%.1f <= %.1f)",
                      temp_calefactor, temp_agua + max_diff);
+          }
+
+  # Runtime tracking - Update pump hours counter every minute
+  - interval: 60s
+    then:
+      - lambda: |-
+          if (id(pileta_bomba_esp).state) {
+            id(bomba_horas_hoy) += (1.0 / 60.0);  // Add 1/60 hour = 1 minute
+            ESP_LOGD("runtime_tracker", "Bomba horas hoy: %.2f", id(bomba_horas_hoy));
           }
 
 switch:
