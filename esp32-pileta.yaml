@@ -57,6 +57,17 @@ time:
               ESP_LOGI("runtime_tracker", "Horas ayer almacenadas: %.2f", id(bomba_horas_ayer));
               id(bomba_horas_hoy) = 0.0;
 
+              // Reset notification throttle flags
+              id(notif_sensor_water_range_sent) = false;
+              id(notif_sensor_heater_range_sent) = false;
+              id(notif_sensor_water_stale_sent) = false;
+              id(notif_sensor_heater_stale_sent) = false;
+              id(notif_pump_desync_sent) = false;
+              id(notif_watchdog_sent) = false;
+              id(notif_param_validation_sent) = false;
+              id(notif_test_available) = true;
+              ESP_LOGI("notifications", "Flags de notificación reseteados");
+
       # Skimmer 7:00 trigger
       - seconds: 0
         minutes: 0
@@ -239,6 +250,17 @@ sensor:
               ESP_LOGW("safety", "IMX (%.1f) < IMI + 1 (%.1f). Forzando IMX = %.1f",
                        new_max_diff, min_allowed, min_allowed);
               id(temp_max_diff) = min_allowed;
+
+              // Send notification (once per day)
+              if (!id(notif_param_validation_sent)) {
+                id(notif_param_validation_sent) = true;
+                auto call = id(homeassistant_api).get_service("notify", "pushover");
+                call.set_service_data("title", "Pool System Alert");
+                call.set_service_data("message", "⚠️ Pool: IMX auto-corregido (ajustado a " + to_string(min_allowed) + "°C)");
+                call.set_service_data("data", "{\"priority\": 0}");
+                call.perform();
+                ESP_LOGI("notifications", "Notificación enviada: Parámetro IMX auto-corregido");
+              }
             } else {
               id(temp_max_diff) = new_max_diff;
             }
@@ -266,6 +288,17 @@ sensor:
                        current_max_diff, min_allowed_max, min_allowed_max);
               id(temp_max_diff) = min_allowed_max;
               ESP_LOGI("config", "Diferencia máxima ajustada a: %.1f°C", id(temp_max_diff));
+
+              // Send notification (once per day)
+              if (!id(notif_param_validation_sent)) {
+                id(notif_param_validation_sent) = true;
+                auto call = id(homeassistant_api).get_service("notify", "pushover");
+                call.set_service_data("title", "Pool System Alert");
+                call.set_service_data("message", "⚠️ Pool: IMX auto-corregido por cambio en IMI (ajustado a " + to_string(min_allowed_max) + "°C)");
+                call.set_service_data("data", "{\"priority\": 0}");
+                call.perform();
+                ESP_LOGI("notifications", "Notificación enviada: Parámetro IMX auto-corregido (cambio IMI)");
+              }
             }
 
 # Text sensor for boolean input from HA
@@ -366,6 +399,47 @@ globals:
     restore_value: no
     initial_value: '0'
 
+  # Notification throttle flags (reset at midnight)
+  - id: notif_sensor_water_range_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_sensor_heater_range_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_sensor_water_stale_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_sensor_heater_stale_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_pump_desync_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_watchdog_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_param_validation_sent
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: notif_test_available
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+
 
 # Control logic - Evaluate heating conditions every 30 seconds
 interval:
@@ -399,6 +473,18 @@ interval:
               ESP_LOGE("safety", "Apagando calefacción por sensor agua inválido");
               id(pileta_calefaccion_completa).turn_off();
             }
+
+            // Send notification (once per day)
+            if (!id(notif_sensor_water_range_sent)) {
+              id(notif_sensor_water_range_sent) = true;
+              auto call = id(homeassistant_api).get_service("notify", "pushover");
+              call.set_service_data("title", "Pool System Alert");
+              call.set_service_data("message", "⚠️ Pool: Sensor agua fuera de rango (" + to_string(temp_agua) + "°C)");
+              call.set_service_data("data", "{\"priority\": 0}");
+              call.perform();
+              ESP_LOGI("notifications", "Notificación enviada: Sensor agua fuera de rango");
+            }
+
             return;
           }
           if (temp_calefactor < 0.0 || temp_calefactor > 80.0) {
@@ -407,6 +493,18 @@ interval:
               ESP_LOGE("safety", "Apagando calefacción por sensor calefactor inválido");
               id(pileta_calefaccion_completa).turn_off();
             }
+
+            // Send notification (once per day)
+            if (!id(notif_sensor_heater_range_sent)) {
+              id(notif_sensor_heater_range_sent) = true;
+              auto call = id(homeassistant_api).get_service("notify", "pushover");
+              call.set_service_data("title", "Pool System Alert");
+              call.set_service_data("message", "⚠️ Pool: Sensor calefactor fuera de rango (" + to_string(temp_calefactor) + "°C)");
+              call.set_service_data("data", "{\"priority\": 0}");
+              call.perform();
+              ESP_LOGI("notifications", "Notificación enviada: Sensor calefactor fuera de rango");
+            }
+
             return;
           }
 
@@ -418,6 +516,18 @@ interval:
               ESP_LOGE("safety", "Apagando calefacción por sensor agua obsoleto");
               id(pileta_calefaccion_completa).turn_off();
             }
+
+            // Send notification (once per day)
+            if (!id(notif_sensor_water_stale_sent)) {
+              id(notif_sensor_water_stale_sent) = true;
+              auto call = id(homeassistant_api).get_service("notify", "pushover");
+              call.set_service_data("title", "Pool System Alert");
+              call.set_service_data("message", "⚠️ Pool: Sensor agua sin actualizar (>5 min)");
+              call.set_service_data("data", "{\"priority\": 0}");
+              call.perform();
+              ESP_LOGI("notifications", "Notificación enviada: Sensor agua obsoleto");
+            }
+
             return;
           }
           if (id(temp_calefactor_last_update) > 0 &&
@@ -427,6 +537,18 @@ interval:
               ESP_LOGE("safety", "Apagando calefacción por sensor calefactor obsoleto");
               id(pileta_calefaccion_completa).turn_off();
             }
+
+            // Send notification (once per day)
+            if (!id(notif_sensor_heater_stale_sent)) {
+              id(notif_sensor_heater_stale_sent) = true;
+              auto call = id(homeassistant_api).get_service("notify", "pushover");
+              call.set_service_data("title", "Pool System Alert");
+              call.set_service_data("message", "⚠️ Pool: Sensor calefactor sin actualizar (>5 min)");
+              call.set_service_data("data", "{\"priority\": 0}");
+              call.perform();
+              ESP_LOGI("notifications", "Notificación enviada: Sensor calefactor obsoleto");
+            }
+
             return;
           }
 
@@ -437,6 +559,18 @@ interval:
                      id(pileta_calefaccion_esp).state ? "ON" : "OFF");
             ESP_LOGE("safety", "Apagando sistema completo");
             id(pileta_calefaccion_completa).turn_off();
+
+            // Send notification (once per day)
+            if (!id(notif_pump_desync_sent)) {
+              id(notif_pump_desync_sent) = true;
+              auto call = id(homeassistant_api).get_service("notify", "pushover");
+              call.set_service_data("title", "Pool System Alert");
+              call.set_service_data("message", "⚠️ Pool: Desincronización de bombas detectada");
+              call.set_service_data("data", "{\"priority\": 0}");
+              call.perform();
+              ESP_LOGI("notifications", "Notificación enviada: Desincronización de bombas");
+            }
+
             return;
           }
 
@@ -447,6 +581,18 @@ interval:
               ESP_LOGE("safety", "Watchdog: 8 horas de operación alcanzadas");
               ESP_LOGE("safety", "Apagando por límite de tiempo independiente");
               id(pileta_calefaccion_completa).turn_off();
+
+              // Send notification (once per day)
+              if (!id(notif_watchdog_sent)) {
+                id(notif_watchdog_sent) = true;
+                auto call = id(homeassistant_api).get_service("notify", "pushover");
+                call.set_service_data("title", "Pool System Alert");
+                call.set_service_data("message", "⚠️ Pool: Límite de 8 horas alcanzado");
+                call.set_service_data("data", "{\"priority\": 0}");
+                call.perform();
+                ESP_LOGI("notifications", "Notificación enviada: Watchdog 8 horas");
+              }
+
               return;
             }
           }
@@ -632,3 +778,25 @@ switch:
       - switch.turn_off: pileta_bomba_esp
       - switch.turn_off: pileta_calefaccion_esp
       - logger.log: "Modo calefacción desactivado manualmente"
+
+button:
+  - platform: template
+    name: "Test Pushover Notification"
+    id: test_pushover_button
+    icon: "mdi:bell-ring"
+    on_press:
+      then:
+        - lambda: |-
+            if (!id(notif_test_available)) {
+              ESP_LOGW("notifications", "Test notification already sent today - wait for midnight reset");
+              return;
+            }
+            ESP_LOGI("notifications", "Test button pressed - sending test notification");
+            id(notif_test_available) = false;
+        - homeassistant.service:
+            service: notify.pushover
+            data:
+              title: "Pool System Test"
+              message: "Test notification from ESP32-pileta. System operational."
+              data:
+                priority: 0
