@@ -308,6 +308,79 @@ button:
 - Monitor logs for 48 hours
 - Verify no duplicate notifications
 
+## Future Enhancements (Optional - Nice-to-Have)
+
+**Purpose:** Potential improvements based on real-world usage and monitoring
+
+**Phase 4B - Time-Based Shutoff (Optional):**
+- Add 18:00 automatic heating cutoff
+- Requires reliable time synchronization
+- May not be needed based on current 8-hour limit
+- Can be added if usage patterns show need
+
+**Monitoring & Visualization:**
+- Create Home Assistant dashboard for pool system
+  - Real-time temperature graphs
+  - Runtime statistics display
+  - Historical trends
+  - Notification history
+- Add automation statistics tracking
+  - Daily/weekly/monthly runtime summaries
+  - Efficiency metrics (heating vs temperature gain)
+  - Cost tracking (if electricity rates available)
+
+**Advanced Automation:**
+- Optimize heating schedule based on solar patterns
+  - Integrate with solar radiation sensors
+  - Predict optimal heating start times
+  - Maximize solar gain efficiency
+- Weather forecast integration
+  - Skip heating if rain/clouds predicted
+  - Adjust target temperature based on forecast
+  - Pre-heat before cold fronts
+- Predictive heating start time
+  - Machine learning based on historical data
+  - Account for ambient temperature
+  - Optimize for target time (e.g., afternoon usage)
+
+**Manual Controls & Overrides:**
+- Add manual override controls in Home Assistant
+  - Force heating on/off (bypass automation)
+  - Adjust schedules temporarily
+  - Emergency stop buttons
+- Mobile app integration for remote control
+- Voice assistant integration (Alexa, Google Home)
+
+**Historical Logging & Analytics:**
+- Long-term data storage and analysis
+  - Temperature history database
+  - Runtime analytics
+  - Efficiency trends over time
+- Export data for external analysis
+- Alert on unusual patterns (potential sensor failures)
+
+**Smart Features:**
+- Adaptive learning algorithms
+  - Learn optimal heating patterns
+  - Adjust to seasonal changes automatically
+  - User preference learning
+- Integration with home energy management
+  - Coordinate with solar panels
+  - Avoid peak electricity rates
+  - Load balancing with other appliances
+
+**Priority for Implementation:**
+1. **Low effort, high value:** HA dashboard for monitoring
+2. **Medium effort, good value:** Historical logging and basic statistics
+3. **High effort, nice value:** Weather integration and predictive algorithms
+4. **Advanced:** Machine learning and full smart home integration
+
+**Notes:**
+- All enhancements are optional and not required for production
+- Implement based on user needs and real-world usage patterns
+- Current system is fully functional without these features
+- Consider after 1-2 months of production operation data
+
 ## Essential Commands
 
 ### Git Workflow

@@ -264,18 +264,63 @@
 
 ---
 
-#### Future Enhancements
+#### Future Enhancements (Optional - Nice-to-Have)
+
+**All core functionality is COMPLETE. These are optional enhancements for future consideration:**
+
 - [x] ~~Implement runtime tracking (daily heating hours)~~ - COMPLETE (Phase 4A)
 - [x] ~~Add parameter validation alert (IMX ≥ IMI + 1°C)~~ - COMPLETE (Phase 4A)
 - [x] ~~Implement skimmer automation~~ - COMPLETE (Phase 6)
-- [ ] Add 18:00 time-based shutoff for heating (Phase 4B - optional)
-- [ ] Create HA dashboard for monitoring and visualization
-- [ ] Add historical logging to track efficiency
+- [x] ~~Add critical event notifications~~ - COMPLETE (Phase 7)
+
+**Phase 4B (Optional):**
+- [ ] Add 18:00 time-based shutoff for heating
+  - May not be needed with current 8-hour limit
+  - Requires reliable time sync
+  - Implement only if usage patterns show need
+
+**Monitoring & Visualization (Priority: Low effort, high value):**
+- [ ] Create Home Assistant dashboard
+  - Real-time temperature graphs
+  - Runtime statistics display
+  - Historical trends
+  - Notification history
+- [ ] Add automation statistics tracking
+  - Daily/weekly/monthly summaries
+  - Efficiency metrics
+  - Cost tracking
+
+**Historical Logging (Priority: Medium effort, good value):**
+- [ ] Long-term data storage and analysis
+- [ ] Temperature history database
+- [ ] Efficiency trends over time
+- [ ] Export data for external analysis
+
+**Advanced Automation (Priority: High effort, nice value):**
+- [ ] Weather forecast integration
+  - Skip heating if rain/clouds predicted
+  - Adjust target temp based on forecast
 - [ ] Optimize heating schedule based on solar patterns
-- [ ] Add weather forecast integration
-- [ ] Implement predictive heating start time
-- [ ] Add manual override controls in Home Assistant
-- [ ] Create automation statistics tracking
+  - Integrate solar radiation sensors
+  - Predict optimal start times
+- [ ] Predictive heating with machine learning
+  - Learn from historical data
+  - Account for ambient temperature
+
+**Manual Controls & Smart Features (Priority: Advanced):**
+- [ ] Manual override controls in Home Assistant
+  - Force heating on/off
+  - Temporary schedule adjustments
+- [ ] Mobile app integration
+- [ ] Voice assistant integration (Alexa, Google Home)
+- [ ] Energy management coordination
+  - Solar panel integration
+  - Peak rate avoidance
+
+**Implementation Notes:**
+- Consider after 1-2 months of production operation
+- Prioritize based on real-world usage patterns
+- Current system is fully functional without these features
 
 ---
 

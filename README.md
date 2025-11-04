@@ -201,6 +201,27 @@ See `WARP_HA_DEBUG.md` for comprehensive HA troubleshooting procedures.
 - [ESP32 Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
 - [GitHub Repository](https://github.com/igarreta/pool_heat_esp32)
 
+## Future Enhancements (Optional)
+
+The following features are optional enhancements that can be added based on real-world usage:
+
+**Monitoring & Visualization:**
+- Home Assistant dashboard with real-time graphs and statistics
+- Historical data logging and trend analysis
+- Automation efficiency metrics
+
+**Advanced Automation:**
+- Weather forecast integration for optimal heating decisions
+- Predictive heating based on solar patterns
+- Machine learning for schedule optimization
+
+**Smart Features:**
+- Manual override controls in Home Assistant
+- Mobile app and voice assistant integration
+- Energy management coordination (solar panels, electricity rates)
+
+**Note:** All core functionality is complete. These enhancements are nice-to-have features for future consideration.
+
 ## License
 
 MIT License - See LICENSE file for details
