@@ -196,7 +196,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Complexity:** ~70 additional lines of code, no interference with existing heating logic
 
-## Critical Event Notifications (Phase 7 - Next Implementation)
+## Critical Event Notifications (Phase 7 - COMPLETE)
 
 **Purpose:** Alert user of critical system failures that require attention
 
@@ -288,10 +288,25 @@ button:
 - `notif_param_validation_sent` (bool) - Track if validation notification sent today
 - All reset to false at midnight
 
+**Implementation Status:**
+- ✅ 8 notification throttle flags implemented
+- ✅ Midnight reset logic added
+- ✅ Test button functional (`button.esp32_pileta_test_pushover_notification`)
+- ✅ 8 notification points at critical error locations
+- ✅ Daily throttling implemented
+- ✅ All logging added
+- ✅ Code locations: Lines 369-408 (globals), 60-69 (reset), 732-753 (button), plus 8 critical points
+
 **Prerequisites:**
 - Home Assistant must have Pushover integration configured
 - Service name: `notify.pushover` must be functional
-- Test with button before adding to critical errors
+- Test button first before relying on critical event notifications
+
+**Deployment:**
+- Deploy updated YAML to ESP32
+- Test button to verify notification path
+- Monitor logs for 48 hours
+- Verify no duplicate notifications
 
 ## Essential Commands
 
@@ -387,7 +402,7 @@ See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
 - Daily runtime tracking: ✅ COMPLETE
 - Safety system: ✅ COMPLETE (Phase 4A)
 - Skimmer automation: ✅ COMPLETE (Phase 6)
-- Critical notifications: ⏳ PLANNED (Phase 7 - Next)
+- Critical notifications: ✅ COMPLETE (Phase 7)
 
 ### Typical Workflow
 

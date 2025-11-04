@@ -1,17 +1,30 @@
 # Project Status - Pool Heat ESP32
 
 **Last Updated:** 2025-11-04
-**Current Phase:** Phase 6 complete - Production ready with heating control and skimmer automation
+**Current Phase:** Phase 7 complete - Production ready with heating, skimmer, and notifications
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
 ---
 
-## Current Status: Production Ready - Heating Control + Skimmer Automation
+## Current Status: Production Ready - Full System with Notifications
 
 ### ✅ Recently Completed (2025-11-04)
 
-1. **Phase 6: Skimmer Automation (2025-11-04)**
+1. **Phase 7: Critical Event Notifications (2025-11-04)**
+   - ✅ Pushover notification integration via Home Assistant
+   - ✅ 8 notification throttle flags (daily reset at midnight)
+   - ✅ Test button: `button.esp32_pileta_test_pushover_notification`
+   - ✅ 8 critical error notification points implemented
+   - ✅ Daily throttling (max 1 per event type per day)
+   - ✅ Priority 0 (normal, not emergency)
+   - ✅ Events: sensor range, staleness, pump desync, watchdog, param validation
+   - ✅ Method: ESP32 → HA service → Pushover
+   - ✅ Code additions: ~168 lines (687 → 802 lines total)
+   - ✅ Documentation: PHASE7_IMPLEMENTATION_PLAN.md created
+   - ✅ Commit: beee198
+
+2. **Phase 6: Skimmer Automation (2025-11-04)**
    - ✅ Dual-mode operation: scheduled (7:00 & 20:00) + fallback (12-hour intervals)
    - ✅ Runtime-based logic: 7:00 skip if yesterday > 3.0h, 20:00 skip if today > 2.5h
    - ✅ Time sync detection with automatic mode transition
@@ -406,6 +419,7 @@ ha core logs | tail -50
 - ✅ Phase 3: Skipped (time-based cutoff not needed per user)
 - ✅ Phase 4A: Comprehensive safety system
 - ✅ Phase 6: Skimmer automation with dual-mode operation
+- ✅ Phase 7: Critical event notifications via Pushover
 
 **Ready for Deployment:**
 1. **Copy to Home Assistant:** `scp esp32-pileta.yaml hassio@192.168.1.7:/config/esphome/`
@@ -416,6 +430,7 @@ ha core logs | tail -50
 
 **Testing Checklist:**
 - [ ] Deploy updated YAML to ESP32
+- [ ] **TEST PUSHOVER BUTTON FIRST** - Verify notification path works
 - [ ] Verify heating control operates correctly
 - [ ] Verify time sync detection
 - [ ] Test skimmer 7:00 trigger (check yesterday's runtime logic)
@@ -425,6 +440,8 @@ ha core logs | tail -50
 - [ ] Test master switches (IAS and IAC)
 - [ ] Monitor midnight reset and runtime storage
 - [ ] Verify new sensor "Horas Bomba Ayer" in HA
+- [ ] Monitor notification throttling (no duplicates same day)
+- [ ] Verify midnight notification flag reset
 
 **Current Blockers:** None - All features implemented and documented
 
@@ -436,8 +453,8 @@ ha core logs | tail -50
 ---
 
 **Latest commits:**
+- beee198 - "Implement Phase 7: Critical event notifications via Pushover" (2025-11-04)
+- 61f1261 - "Add Phase 7 documentation: Critical event notifications via Pushover" (2025-11-04)
+- b7d19ef - "Update PROJECT_STATUS.md: Mark Phase 6 complete" (2025-11-04)
 - cd30493 - "Update README with completed skimmer automation features" (2025-11-04)
-- b20382d - "Update documentation: Mark Phase 6 skimmer automation as COMPLETE" (2025-11-04)
 - c3439b4 - "Implement Phase 6: Skimmer automation with dual-mode operation" (2025-11-04)
-- 970ec9b - "Add Phase 6 documentation: Skimmer automation planning" (2025-11-03)
-- af15616 - "Implement Phase 4A: Critical safety checks and edge case handling" (2025-11-03)

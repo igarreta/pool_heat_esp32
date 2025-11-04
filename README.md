@@ -81,7 +81,7 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
 - **Safety:** Existing 1-hour auto-shutoff timer protection
 - **Autonomous:** Continues operation even during WiFi disconnection
 
-### Critical Event Notifications (Planned - Phase 7)
+### Critical Event Notifications
 - **Method:** ESP32 → Home Assistant → Pushover
 - **Notifies On:**
   - Sensor range violations (water/heater temp out of bounds)
@@ -89,9 +89,10 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
   - Pump desync detection
   - Runtime watchdog triggered (8-hour limit)
   - Parameter validation auto-corrections
-- **Throttling:** Max once per day per event type
+- **Throttling:** Max once per day per event type (resets at midnight)
 - **Priority:** Normal (0) - no emergency alerts
-- **Test Button:** Manual test function exposed to Home Assistant
+- **Test Button:** `button.esp32_pileta_test_pushover_notification`
+- **Implementation:** 8 notification flags, midnight reset, 8 critical error points
 - **Not Notified:** WiFi issues, normal operations, sensor readings
 
 ### Communication
