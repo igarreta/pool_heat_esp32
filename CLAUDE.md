@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Home Assistant Role:** Configuration interface (input entities), status display, optional override controls
 - **Communication:** ESP32 pulls configuration from HA input entities, reports status via MQTT + HA API
 
-**Current Status:** Production-ready heating control with comprehensive safety system. Next phase: Skimmer automation.
+**Current Status:** Production-ready heating control with comprehensive safety system. Skimmer automation implemented and ready for deployment.
 
 ### Hardware Configuration
 
@@ -105,7 +105,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Parameters update automatically when WiFi/HA reconnects
 - No action required - fully automatic
 
-## Skimmer Automation (Phase 6 - Implementation Ready)
+## Skimmer Automation (Phase 6 - COMPLETE)
 
 **Purpose:** Ensure consistent daily filter runtime for pool water quality
 
@@ -289,7 +289,7 @@ See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
 - Heating control logic: ✅ COMPLETE (Phases 1-4A)
 - Daily runtime tracking: ✅ COMPLETE
 - Safety system: ✅ COMPLETE (Phase 4A)
-- Skimmer automation: 🚧 IN PROGRESS (Phase 6)
+- Skimmer automation: ✅ COMPLETE (Phase 6)
 
 ### Typical Workflow
 
