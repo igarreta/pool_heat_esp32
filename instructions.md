@@ -107,6 +107,55 @@ Home Assistant will provide the fronting (web interface) to configure the automa
 - Master switch OFF only disables skimmer scheduling, not pump operation
 - No interference with heating 8-hour continuous limit
 
+### **Critical Event Notifications (Phase 7)**
+
+**Purpose:** Alert user of critical system failures via Pushover
+
+**Notification Method:**
+- ESP32 calls Home Assistant service: `notify.pushover`
+- HA handles Pushover API communication
+- Works over local network (not affected by internet issues)
+
+**Events to Notify (Priority 0, No Daily Repeats):**
+
+1. **Sensor Range Violations:**
+   - Water temp < 0°C or > 50°C
+   - Heater temp < 0°C or > 80°C
+   - Message: "⚠️ Pool: [Sensor] fuera de rango (XX°C)"
+
+2. **Sensor Staleness:**
+   - No update for >5 minutes
+   - Message: "⚠️ Pool: Sensor [name] sin actualizar (>5 min)"
+
+3. **Pump Desync:**
+   - Pumps don't match expected heating state
+   - Message: "⚠️ Pool: Desincronización de bombas detectada"
+
+4. **Runtime Watchdog:**
+   - 8-hour continuous limit reached
+   - Message: "⚠️ Pool: Límite de 8 horas alcanzado"
+
+5. **Parameter Validation:**
+   - IMX < IMI + 1°C auto-corrected
+   - Message: "⚠️ Pool: Parámetros inválidos auto-corregidos"
+
+**Notification Throttling:**
+- Each notification type can only be sent once per day
+- Flags reset at midnight
+- Prevents notification spam
+
+**Manual Test:**
+- Test button exposed to HA: `button.esp32_pileta_test_pushover_notification`
+- Sends test message to verify notification path
+- Use after deployment or configuration changes
+
+**Events NOT Notified:**
+- WiFi disconnection (notifications wouldn't work anyway)
+- Normal operation events
+- Sensor readings
+- Control logic evaluations
+- Heating/skimmer cycles
+
 ## Requirements
 - Minimize rapid on/off cycling with dead zones
 - Robust error handling with delayed safety response

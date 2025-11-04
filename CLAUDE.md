@@ -196,6 +196,103 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Complexity:** ~70 additional lines of code, no interference with existing heating logic
 
+## Critical Event Notifications (Phase 7 - Next Implementation)
+
+**Purpose:** Alert user of critical system failures that require attention
+
+**Notification Strategy:**
+- **Method:** ESP32 → Home Assistant → Pushover (via `notify.pushover` service)
+- **Why HA instead of direct API:**
+  - Works over local network (WiFi issues don't block notifications)
+  - Simpler ESP32 code (no HTTPS/token management)
+  - Flexible (easy to change notification service later)
+  - Already connected via HA API
+
+**Critical Events to Notify:**
+
+1. **Sensor Range Violations** (esp32-pileta.yaml:268-284)
+   - Water temp < 0°C or > 50°C
+   - Heater temp < 0°C or > 80°C
+   - Message: "⚠️ Pool: [Sensor] fuera de rango (XX°C)"
+   - Priority: 0 (normal)
+
+2. **Sensor Staleness** (esp32-pileta.yaml:286-304)
+   - No sensor update for >5 minutes
+   - Message: "⚠️ Pool: Sensor [name] sin actualizar (>5 min)"
+   - Priority: 0
+
+3. **Pump Desync Detection** (esp32-pileta.yaml:306-314)
+   - Pumps don't match expected heating state
+   - Message: "⚠️ Pool: Desincronización de bombas detectada"
+   - Priority: 0
+
+4. **Runtime Watchdog Triggered** (esp32-pileta.yaml:316-325)
+   - 8-hour continuous runtime limit reached
+   - Message: "⚠️ Pool: Límite de 8 horas alcanzado"
+   - Priority: 0
+
+5. **Parameter Validation Auto-Correction** (esp32-pileta.yaml:146-177)
+   - IMX < IMI + 1°C automatically corrected
+   - Message: "⚠️ Pool: Parámetros inválidos auto-corregidos (IMX ajustado)"
+   - Priority: 0
+
+**Notification Throttling:**
+- Do NOT repeat same notification within the same day
+- Use global flags to track sent notifications
+- Reset flags at midnight
+
+**Events NOT Notified:**
+- ❌ WiFi disconnection (notifications wouldn't work anyway)
+- ❌ Normal operation events (too frequent)
+- ❌ Sensor readings (continuous data)
+- ❌ Control logic evaluations (every 30s)
+- ❌ Heating/skimmer cycles (optional for future)
+
+**Manual Test Function:**
+- **Test Button:** `button.esp32_pileta_test_pushover_notification`
+- Exposed to Home Assistant UI
+- Sends test message: "Pool System Test - This is a test notification from ESP32-pileta"
+- Use to verify notification path after deployment or configuration changes
+
+**Implementation Details:**
+```yaml
+# Add to esp32-pileta.yaml
+button:
+  - platform: template
+    name: "Test Pushover Notification"
+    on_press:
+      - homeassistant.service:
+          service: notify.pushover
+          data:
+            title: "Pool System Test"
+            message: "Test notification from ESP32-pileta"
+            data:
+              priority: 0
+
+# Add to each critical error:
+- homeassistant.service:
+    service: notify.pushover
+    data:
+      title: "Pool System Alert"
+      message: !lambda |-
+        return "Sensor agua fuera de rango: " + String(temp_agua) + "°C";
+      data:
+        priority: 0
+```
+
+**New Globals Required:**
+- `notif_sensor_range_sent` (bool) - Track if sensor range notification sent today
+- `notif_sensor_stale_sent` (bool) - Track if staleness notification sent today
+- `notif_pump_desync_sent` (bool) - Track if desync notification sent today
+- `notif_watchdog_sent` (bool) - Track if watchdog notification sent today
+- `notif_param_validation_sent` (bool) - Track if validation notification sent today
+- All reset to false at midnight
+
+**Prerequisites:**
+- Home Assistant must have Pushover integration configured
+- Service name: `notify.pushover` must be functional
+- Test with button before adding to critical errors
+
 ## Essential Commands
 
 ### Git Workflow
@@ -290,6 +387,7 @@ See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
 - Daily runtime tracking: ✅ COMPLETE
 - Safety system: ✅ COMPLETE (Phase 4A)
 - Skimmer automation: ✅ COMPLETE (Phase 6)
+- Critical notifications: ⏳ PLANNED (Phase 7 - Next)
 
 ### Typical Workflow
 
