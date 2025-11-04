@@ -5,7 +5,7 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
 ## Overview
 
 **Architecture:** Hybrid control system
-- **ESP32:** Autonomous heating control logic (due to unreliable WiFi)
+- **ESP32:** Autonomous heating control logic and skimmer automation (due to unreliable WiFi)
 - **Home Assistant:** Configuration interface and monitoring dashboard
 - **Communication:** MQTT + Home Assistant API
 
@@ -45,16 +45,21 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
 - **Safety Shutdown:** Automatic stop when target reached or heater insufficient
 
 ### Configuration Interface (Home Assistant)
-- **IAC (input_boolean):** Master enable/disable switch
+
+**Heating Control:**
+- **IAC (input_boolean):** Master enable/disable heating
 - **ITO (input_number):** Target pool temperature setpoint
 - **IMX (input_number):** Temperature delta to turn ON heating
 - **IMI (input_number):** Temperature delta to turn OFF heating
 
+**Skimmer Control:**
+- **IAS (input_boolean):** Master enable/disable skimmer automation
+
 ### Daily Runtime Tracking
 - **Pump Hours Counter:** Tracks daily operation time
 - **Automatic Reset:** Midnight reset via time synchronization
-- **HA Integration:** "Horas Bomba Hoy" sensor for monitoring
-- **Future Use:** Enables skimmer automation based on filter runtime
+- **HA Integration:** Sensors "Horas Bomba Hoy" and "Horas Bomba Ayer" for monitoring
+- **Used By:** Skimmer automation logic for runtime-based decisions
 
 ### Comprehensive Safety System
 - ✅ **Parameter Validation:** Enforces IMX ≥ IMI + 1°C automatically
@@ -64,6 +69,17 @@ ESPHome-based solar pool heating controller for ESP32-DevKit with Home Assistant
 - ✅ **Independent Watchdog:** Backup 8-hour timer prevents runaway operation
 - ✅ **WiFi Resilience:** Continues with last-known values during disconnection
 - All safety violations trigger immediate shutdown with error logging
+
+### Skimmer Automation
+- **Dual-Mode Operation:**
+  - **Scheduled Mode:** Runs at 7:00 and 20:00 when time synced with HA
+  - **Fallback Mode:** Runs every 12 hours from boot if no time sync
+- **Runtime-Based Logic:**
+  - 7:00 trigger: Skip if previous day > 3.0 hours runtime
+  - 20:00 trigger: Skip if current day > 2.5 hours runtime
+- **Heating Priority:** Skimmer always defers to heating mode
+- **Safety:** Existing 1-hour auto-shutoff timer protection
+- **Autonomous:** Continues operation even during WiFi disconnection
 
 ### Communication
 - **Home Assistant API:** Encrypted connection
