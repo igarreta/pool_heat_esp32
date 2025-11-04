@@ -45,7 +45,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Home Assistant Integration Entities
 
 **Input Controls (HA → ESP32):**
-- `input_boolean.activar_calefaccion_pileta` (IAC) - Master enable/disable
+- `input_boolean.activar_calefaccion_pileta` (IAC) - Master enable/disable heating
+- `input_boolean.activar_skimmer_pileta` (IAS) - Master enable/disable skimmer
 - `input_number.pileta_temp_objetivo` (ITO) - Target pool temperature
 - `input_number.pileta_temp_max_diff` (IMX) - Temperature delta to turn ON heating
 - `input_number.pileta_temp_min_diff` (IMI) - Temperature delta to turn OFF heating
@@ -56,6 +57,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Sensor Entities (ESP32 → HA):**
 - `sensor.esp32_pileta_temperatura_agua` (SAG) - Current water temperature
 - `sensor.esp32_pileta_temperatura_calefactor` (SCL) - Heater temperature
+- `sensor.esp32_pileta_horas_bomba_hoy` - Daily pump runtime (hours)
+- `sensor.esp32_pileta_horas_bomba_ayer` - Previous day pump runtime (hours)
 
 ### Control Logic (to be implemented on ESP32)
 
@@ -68,7 +71,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. SAG ≥ ITO — Target temperature reached
 2. SCL ≤ (SAG + IMI) — Heater insufficient temperature
 3. IAC is disabled
-4. Time = 18:00 (if ESP32 has reliable time)
 
 **Parameter Validation:** IMX ≥ (IMI + 1°C) to prevent logic conflicts
 - Automatically enforced on ESP32
@@ -103,53 +105,96 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Parameters update automatically when WiFi/HA reconnects
 - No action required - fully automatic
 
-## Skimmer Automation (Phase 6 - Next Implementation)
+## Skimmer Automation (Phase 6 - Implementation Ready)
 
-**Purpose:** Ensure minimum daily filter runtime for pool water quality
+**Purpose:** Ensure consistent daily filter runtime for pool water quality
 
 **Current Situation:**
-- Skimmer (pileta_bomba_esp) currently controlled manually via HA
+- Skimmer pump (`pileta_bomba_esp`) shared with heating system
 - 1-hour auto-shutoff timer active when NOT in heating mode
-- Daily runtime counter (`bomba_horas_hoy`) already tracking pump hours
+- Daily runtime counter (`bomba_horas_hoy`) already tracking total pump hours
 - Midnight reset via time synchronization already implemented
 
-**Requirements for Implementation:**
+### Skimmer Requirements
 
-**New HA Input Entity Needed:**
-- `input_number.pileta_horas_minimas_diarias` - Minimum required daily pump hours
+**HA Input Entity (already created):**
+- `input_boolean.activar_skimmer_pileta` - Master enable/disable for skimmer logic
 
-**Logic to Implement:**
-1. Check daily runtime at specific time(s) (TBD: e.g., 17:00, 20:00)
-2. Calculate: `runtime_deficit = minimum_hours - bomba_horas_hoy`
-3. If deficit > 0 and heating NOT active, start skimmer
-4. Run skimmer for calculated time (respecting 1-hour safety timer)
-5. May require multiple 1-hour cycles to meet deficit
+**Schedule:**
+- **7:00:** Run skimmer for 1 hour (skip if `bomba_horas_ayer` > 3.0 hours)
+- **20:00:** Run skimmer for 1 hour (skip if `bomba_horas_hoy` > 2.5 hours)
 
-**Critical Constraints:**
-- **NEVER interfere with heating mode** - heating has absolute priority
-- Check `bomba_modo_calefaccion` flag before activating skimmer
-- Respect existing 1-hour auto-shutoff safety mechanism
-- Work within time platform synchronization
-- Handle WiFi disconnection gracefully
+**Fallback Mode (No Time Sync):**
+- Run skimmer for 1 hour every 12 hours from boot
+- Automatically disabled once HA time sync established
+- Ensures basic water filtration even without HA connectivity
 
-**Design Considerations:**
-- What time(s) should skimmer check be performed? (User input needed)
-- How to handle partial completion if WiFi drops?
-- Should skimmer defer to heating mode or abort cycle?
-- Log skimmer activation decisions for monitoring
+### Critical Constraints
 
-**Implementation Strategy:**
-- Add time-based trigger(s) using existing `time` platform
-- Add lambda logic to calculate runtime deficit
-- Create skimmer activation conditions
-- Reuse existing 1-hour safety timer (already working)
-- Add logging for skimmer decisions
+**Heating Priority (Absolute):**
+- Heating logic is **completely independent** and has **absolute priority**
+- Skimmer NEVER starts if `bomba_modo_calefaccion == true`
+- If heating starts while skimmer running, skimmer stops immediately (handled by existing 1-hour timer logic)
+- Skimmer master switch OFF does NOT affect heating pump operation
 
-**Expected Behavior:**
-- If heating runs for 4 hours and minimum is 6 hours → skimmer adds 2 hours
-- If heating hasn't run and minimum is 4 hours → skimmer runs 4 hours (4 cycles)
-- If heating is active → skimmer waits or defers
-- All operations logged for debugging
+**Safety:**
+- Existing 1-hour auto-shutoff timer protects pump (lines 407-414)
+- Skimmer runtime counts toward `bomba_horas_hoy` (already implemented)
+- Heating 8-hour continuous limit remains unchanged
+
+### Implementation Strategy
+
+**New Globals Required:**
+```yaml
+- bomba_horas_ayer (float) - Previous day's runtime for 7:00 check
+- skimmer_habilitado (bool) - Master switch state from HA
+- time_synced (bool) - Track if HA time is valid
+- skimmer_last_run (unsigned long) - Timestamp for fallback mode
+```
+
+**Logic Flow:**
+
+1. **Boot:**
+   - `time_synced = false`, `skimmer_last_run = 0`
+   - Pull `skimmer_habilitado` from HA
+
+2. **Fallback Mode (60s interval check):**
+   - Active only when `time_synced == false`
+   - If 12 hours elapsed AND `skimmer_habilitado` AND NOT `bomba_modo_calefaccion`:
+     - Start pump for 1 hour
+     - Update `skimmer_last_run = millis()`
+
+3. **Time Sync Detection:**
+   - Monitor `id(ha_time).now().is_valid()`
+   - Once valid: `time_synced = true` (disables fallback mode)
+
+4. **Scheduled Mode (requires time sync):**
+   - **7:00 trigger:** Skip if `bomba_horas_ayer > 3.0` OR `bomba_modo_calefaccion` OR NOT `skimmer_habilitado`
+   - **20:00 trigger:** Skip if `bomba_horas_hoy > 2.5` OR `bomba_modo_calefaccion` OR NOT `skimmer_habilitado`
+   - Start pump for 1 hour (existing timer handles shutoff)
+
+5. **Midnight Reset (enhanced):**
+   - Store: `bomba_horas_ayer = bomba_horas_hoy`
+   - Reset: `bomba_horas_hoy = 0.0`
+
+### Expected Behavior
+
+**Normal Operation (time synced):**
+- 7:00: Pump runs if yesterday's total < 3 hours and heating not active
+- 20:00: Pump runs if today's total < 2.5 hours and heating not active
+- Heating can interrupt skimmer at any time
+- Skimmer defers to heating automatically
+
+**Fallback Operation (no time sync):**
+- Pump runs 1 hour every 12 hours from boot
+- Stops immediately if heating starts
+- Transitions to scheduled mode once time syncs
+
+**Master Switch OFF:**
+- Skimmer scheduling completely disabled
+- Does NOT force pump off (respects heating mode)
+
+**Complexity:** ~70 additional lines of code, no interference with existing heating logic
 
 ## Essential Commands
 
@@ -244,7 +289,7 @@ See `WARP_HA_DEBUG.md` for comprehensive HA debugging procedures.
 - Heating control logic: ✅ COMPLETE (Phases 1-4A)
 - Daily runtime tracking: ✅ COMPLETE
 - Safety system: ✅ COMPLETE (Phase 4A)
-- Skimmer automation: ⏳ PLANNED (Phase 6 - Next)
+- Skimmer automation: 🚧 IN PROGRESS (Phase 6)
 
 ### Typical Workflow
 
@@ -321,10 +366,10 @@ Prevent rapid on/off cycling:
 
 ### Safety First
 Multiple layers of automatic shutdowns:
-- Individual relay timers (1h pump, 8h heater)
-- Combined mode timer (8h)
-- Time-based cutoff (18:00 if reliable time available)
-- Master disable via IAC
+- Individual relay timers (1h pump when skimmer, 8h heater)
+- Combined heating mode timer (8h)
+- Master disable switches (IAC for heating, IAS for skimmer)
+- Heating has absolute priority over skimmer
 
 ## Troubleshooting
 

@@ -37,6 +37,14 @@ mqtt:
 time:
   - platform: homeassistant
     id: ha_time
+    on_time_sync:
+      then:
+        - lambda: |-
+            if (!id(time_synced)) {
+              ESP_LOGI("skimmer", "Tiempo sincronizado con Home Assistant");
+              id(time_synced) = true;
+              id(skimmer_last_run) = 0;  // Disable fallback mode
+            }
     on_time:
       # Reset daily counter at midnight
       - seconds: 0
@@ -44,8 +52,84 @@ time:
         hours: 0
         then:
           - lambda: |-
-              ESP_LOGI("runtime_tracker", "Reset diario: %.2f horas registradas ayer", id(bomba_horas_hoy));
+              ESP_LOGI("runtime_tracker", "Reset diario: %.2f horas registradas hoy", id(bomba_horas_hoy));
+              id(bomba_horas_ayer) = id(bomba_horas_hoy);
+              ESP_LOGI("runtime_tracker", "Horas ayer almacenadas: %.2f", id(bomba_horas_ayer));
               id(bomba_horas_hoy) = 0.0;
+
+      # Skimmer 7:00 trigger
+      - seconds: 0
+        minutes: 0
+        hours: 7
+        then:
+          - lambda: |-
+              ESP_LOGI("skimmer", "=== Trigger 7:00 - Verificando condiciones ===");
+
+              // Check if time is synced
+              if (!id(time_synced)) {
+                ESP_LOGW("skimmer", "7:00 - Omitido: tiempo no sincronizado");
+                return;
+              }
+
+              // Check if skimmer is enabled
+              if (!id(skimmer_habilitado)) {
+                ESP_LOGI("skimmer", "7:00 - Omitido: skimmer deshabilitado (IAS=OFF)");
+                return;
+              }
+
+              // Check if heating is active
+              if (id(bomba_modo_calefaccion)) {
+                ESP_LOGI("skimmer", "7:00 - Omitido: calefacción activa (prioridad)");
+                return;
+              }
+
+              // Check yesterday's runtime
+              float horas_ayer = id(bomba_horas_ayer);
+              if (horas_ayer > 3.0) {
+                ESP_LOGI("skimmer", "7:00 - Omitido: bomba corrió %.2f horas ayer (> 3.0h)", horas_ayer);
+                return;
+              }
+
+              // All conditions met - start pump
+              ESP_LOGI("skimmer", "7:00 - INICIANDO bomba: horas ayer=%.2f <= 3.0", horas_ayer);
+              id(pileta_bomba_esp).turn_on();
+
+      # Skimmer 20:00 trigger
+      - seconds: 0
+        minutes: 0
+        hours: 20
+        then:
+          - lambda: |-
+              ESP_LOGI("skimmer", "=== Trigger 20:00 - Verificando condiciones ===");
+
+              // Check if time is synced
+              if (!id(time_synced)) {
+                ESP_LOGW("skimmer", "20:00 - Omitido: tiempo no sincronizado");
+                return;
+              }
+
+              // Check if skimmer is enabled
+              if (!id(skimmer_habilitado)) {
+                ESP_LOGI("skimmer", "20:00 - Omitido: skimmer deshabilitado (IAS=OFF)");
+                return;
+              }
+
+              // Check if heating is active
+              if (id(bomba_modo_calefaccion)) {
+                ESP_LOGI("skimmer", "20:00 - Omitido: calefacción activa (prioridad)");
+                return;
+              }
+
+              // Check today's runtime
+              float horas_hoy = id(bomba_horas_hoy);
+              if (horas_hoy > 2.5) {
+                ESP_LOGI("skimmer", "20:00 - Omitido: bomba corrió %.2f horas hoy (> 2.5h)", horas_hoy);
+                return;
+              }
+
+              // All conditions met - start pump
+              ESP_LOGI("skimmer", "20:00 - INICIANDO bomba: horas hoy=%.2f <= 2.5", horas_hoy);
+              id(pileta_bomba_esp).turn_on();
 
 one_wire:
   - platform: gpio
@@ -109,7 +193,7 @@ sensor:
     name: "Señal WiFi ESP32 Pileta"
     update_interval: 60s
 
-  # Runtime tracking sensor
+  # Runtime tracking sensors
   - platform: template
     name: "Horas Bomba Hoy"
     id: sensor_horas_bomba_hoy
@@ -117,6 +201,14 @@ sensor:
     accuracy_decimals: 1
     update_interval: 60s
     lambda: 'return id(bomba_horas_hoy);'
+
+  - platform: template
+    name: "Horas Bomba Ayer"
+    id: sensor_horas_bomba_ayer
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return id(bomba_horas_ayer);'
 
   # Home Assistant Input Entities - Configuration parameters
   - platform: homeassistant
@@ -192,6 +284,20 @@ text_sensor:
             format: "Calefacción habilitada: %s"
             args: ['x.c_str()']
 
+  - platform: homeassistant
+    id: ha_activar_skimmer
+    entity_id: input_boolean.activar_skimmer_pileta
+    name: "HA Activar Skimmer (IAS)"
+    on_value:
+      then:
+        - globals.set:
+            id: skimmer_habilitado
+            value: !lambda |-
+              return (x == "on" || x == "true");
+        - logger.log:
+            format: "Skimmer habilitado: %s"
+            args: ['x.c_str()']
+
 # Global variables to store last known values for offline operation
 globals:
   - id: calefaccion_habilitada
@@ -235,6 +341,27 @@ globals:
     initial_value: '0'
 
   - id: heating_start_time
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+
+  # Skimmer automation globals
+  - id: bomba_horas_ayer
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: skimmer_habilitado
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+
+  - id: time_synced
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: skimmer_last_run
     type: unsigned long
     restore_value: no
     initial_value: '0'
@@ -393,6 +520,47 @@ interval:
           if (id(pileta_bomba_esp).state) {
             id(bomba_horas_hoy) += (1.0 / 60.0);  // Add 1/60 hour = 1 minute
             ESP_LOGD("runtime_tracker", "Bomba horas hoy: %.2f", id(bomba_horas_hoy));
+          }
+
+  # Skimmer fallback mode - Run every 12 hours if no time sync
+  - interval: 60s
+    then:
+      - lambda: |-
+          // Only run if time is NOT synced (fallback mode)
+          if (id(time_synced)) {
+            return;  // Scheduled mode is active, skip fallback
+          }
+
+          // Check if skimmer is enabled
+          if (!id(skimmer_habilitado)) {
+            return;
+          }
+
+          // Check if heating is active (heating has priority)
+          if (id(bomba_modo_calefaccion)) {
+            return;
+          }
+
+          // Check if 12 hours (43200000 ms) have elapsed since last run
+          unsigned long current_time = millis();
+          unsigned long time_since_last_run = current_time - id(skimmer_last_run);
+          const unsigned long twelve_hours_ms = 43200000;  // 12 hours in milliseconds
+
+          // Handle millis() overflow (wraps around every ~49 days)
+          if (time_since_last_run >= twelve_hours_ms) {
+            ESP_LOGI("skimmer", "=== Modo fallback: 12 horas transcurridas ===");
+            ESP_LOGI("skimmer", "INICIANDO bomba (sin sincronización de tiempo)");
+            id(pileta_bomba_esp).turn_on();
+            id(skimmer_last_run) = current_time;
+          } else {
+            // Log remaining time every 30 minutes
+            unsigned long remaining_ms = twelve_hours_ms - time_since_last_run;
+            float remaining_hours = remaining_ms / 3600000.0;
+
+            // Only log if we're at a 30-minute boundary (within a 60-second window)
+            if (((int)(remaining_hours * 2) % 1 == 0) && (remaining_ms % 1800000 < 60000)) {
+              ESP_LOGD("skimmer", "Fallback: %.1f horas hasta próximo ciclo", remaining_hours);
+            }
           }
 
 switch:

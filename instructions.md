@@ -12,13 +12,21 @@ Home Assistant will provide the fronting (web interface) to configure the automa
 - **Hardware:** ESP32 with occasional WiFi connectivity issues
 
 ## Entities
-- **IAC**: `input_boolean.activar_calefaccion_pileta` - Master enable/disable control
+
+### Heating Control
+- **IAC**: `input_boolean.activar_calefaccion_pileta` - Master enable/disable heating
 - **SWA**: `switch.pileta_exp32_calefaccion_completa_esp32` - Heating on/off switch
 - **SAG**: `sensor.esp32_pileta_temperatura_agua` - Water temperature in pipe
-- **SCL**: `sensor.esp32_pileta_temperatura_calefactor` - Roof heater temperature  
+- **SCL**: `sensor.esp32_pileta_temperatura_calefactor` - Roof heater temperature
 - **ITO**: `input_number.pileta_temp_objetivo` - Target pool temperature
 - **IMX**: `input_number.pileta_temp_max_diff` - Temp difference to turn ON heating
 - **IMI**: `input_number.pileta_temp_min_diff` - Temp difference to turn OFF heating
+
+### Skimmer Control
+- **IAS**: `input_boolean.activar_skimmer_pileta` - Master enable/disable skimmer
+- **Pump**: `pileta_bomba_esp` (GPIO2) - Shared pump for heating and skimmer
+- **Runtime Today**: `sensor.esp32_pileta_horas_bomba_hoy` - Daily pump runtime
+- **Runtime Yesterday**: `sensor.esp32_pileta_horas_bomba_ayer` - Previous day runtime
 
 ## Logic Requirements
 
@@ -57,9 +65,47 @@ Home Assistant will provide the fronting (web interface) to configure the automa
 - At shutdown should stop both pumps
 
 ### **Runtime Tracking**
-- Track daily heating runtime in hours/minutes
-- Store in helper entity for future skimmer automation logic
-- Reset counter at midnight
+- Track daily pump runtime in `bomba_horas_hoy` (updates every 60s when pump ON)
+- Store previous day's runtime in `bomba_horas_ayer` at midnight before reset
+- Reset `bomba_horas_hoy` to 0 at midnight
+- Exposed to HA as sensors for monitoring
+
+### **Skimmer Automation Logic**
+
+**Purpose:** Ensure consistent daily pool filtration for water quality
+
+**Master Control:**
+- Controlled by `input_boolean.activar_skimmer_pileta` (IAS)
+- When IAS turns OFF, skimmer logic disabled (does NOT force pump off if heating active)
+
+**Scheduled Mode (requires HA time sync):**
+- **7:00 trigger:** Run pump for 1 hour IF:
+  - IAS is enabled AND
+  - `bomba_horas_ayer` ≤ 3.0 hours AND
+  - `bomba_modo_calefaccion` is false (heating not active)
+
+- **20:00 trigger:** Run pump for 1 hour IF:
+  - IAS is enabled AND
+  - `bomba_horas_hoy` ≤ 2.5 hours AND
+  - `bomba_modo_calefaccion` is false (heating not active)
+
+**Fallback Mode (no HA time sync):**
+- Run pump for 1 hour every 12 hours from boot IF:
+  - IAS is enabled AND
+  - `bomba_modo_calefaccion` is false
+- Automatically disabled once HA time sync established
+- Uses `millis()` to track elapsed time
+
+**Conflict Resolution:**
+- Heating has **absolute priority**
+- Skimmer NEVER starts if heating is active
+- If heating starts while skimmer running, existing 1-hour timer allows heating flag to take over
+- Skimmer runtime counts toward `bomba_horas_hoy`
+
+**Safety:**
+- Existing 1-hour auto-shutoff protects pump (when NOT in heating mode)
+- Master switch OFF only disables skimmer scheduling, not pump operation
+- No interference with heating 8-hour continuous limit
 
 ## Requirements
 - Minimize rapid on/off cycling with dead zones
