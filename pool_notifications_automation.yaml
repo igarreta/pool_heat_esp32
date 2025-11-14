@@ -38,8 +38,7 @@
       data:
         title: "Pool System Alert"
         message: "⚠️ {{ trigger.to_state.state }}"
-        data:
-          priority: 0
+        priority: "0"
 
     # Clear the error message on ESP32 to prevent repeat notifications
     - service: esphome.esp32_pileta_clear_error_message
