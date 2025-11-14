@@ -2,6 +2,115 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL: Lessons Learned - READ THIS FIRST
+
+**Before making ANY changes to ESPHome or Home Assistant code, follow these rules:**
+
+### Rule 1: NEVER Use Undocumented APIs
+- ❌ **WRONG:** `HomeassistantServiceResponse`, `HomeassistantServiceMap`, `get_service()`, `send_homeassistant_service_call()`
+- ✅ **CORRECT:** Use documented ESPHome features only
+- **Lesson:** These undocumented APIs don't exist or break between versions
+- **Solution:** If you can't find it in official ESPHome docs, DON'T use it
+
+### Rule 2: ESPHome Cannot Call HA Services from Lambda
+- ❌ **WRONG:** Trying to call `notify.pushover` or any HA service from C++ lambda code
+- ✅ **CORRECT:** Use separation of concerns - ESP32 publishes state, HA monitors and acts
+- **Pattern:** ESP32 → Text Sensor → HA Automation → HA Service
+- **Lesson:** ESPHome is for device control, HA is for notifications/services
+
+### Rule 3: String Globals Use Lambda Assignment
+- ❌ **WRONG:** `globals.set: { id: my_string, value: "text" }`
+- ✅ **CORRECT:** `lambda: |- \n id(my_string) = "text";`
+- **Reason:** `std::string` type requires direct assignment in lambda
+- **Applies to:** All string global variables
+
+### Rule 4: Modern Home Assistant Automation Syntax (2024+)
+- ❌ **WRONG:** `trigger:`, `condition:`, `action:`, `service:`, `platform: state`
+- ✅ **CORRECT:** `triggers:`, `conditions:`, `actions:`, `action:`, `trigger: state`
+- **Format:** No dash before `alias:` when pasting in HA UI
+- **Indentation:** No extra indentation when copying to HA UI
+- **Example:**
+```yaml
+alias: My Automation
+triggers:
+  - entity_id: sensor.name
+    trigger: state
+actions:
+  - data:
+      message: Text
+    action: notify.service
+```
+
+### Rule 5: Pushover Notifications in HA
+- ❌ **WRONG:** `data: { title: "", message: "", data: { priority: 0 } }`
+- ❌ **WRONG:** `data: { title: "", message: "", priority: "0" }`
+- ✅ **CORRECT:** `data: { title: "", message: "" }` (priority goes in Pushover integration settings)
+- **Lesson:** Don't nest `data` inside `data`, and priority is not supported per-notification
+
+### Rule 6: Test Before Committing
+- **ALWAYS verify syntax with:**
+  - ESPHome: Use `esphome config file.yaml` if available
+  - HA: Test in HA UI automation editor before committing
+- **Don't guess:** If unsure, search official docs or ask user first
+- **User testing is authoritative:** If user provides working syntax, use it exactly
+
+### Rule 7: Simplicity Over Complexity
+- **First approach:** Simple, documented patterns (text sensors, automations)
+- **Last resort:** Complex C++ code or internal APIs
+- **Lesson:** Spent 3 attempts on complex solutions when simple text sensor worked perfectly
+
+### Rule 8: Version-Specific Syntax
+- **Check versions:**
+  - ESPHome: Changes between major versions
+  - Home Assistant: Automation syntax evolves
+- **Don't assume:** Old examples may use deprecated syntax
+- **Verify:** Use WebSearch for current year documentation
+
+## What Finally Worked (Use This Pattern)
+
+**For ESP32 → HA Communication:**
+```yaml
+# ESP32: Publish error state
+globals:
+  - id: error_message
+    type: std::string
+    initial_value: '""'
+
+text_sensor:
+  - platform: template
+    name: "Error State"
+    lambda: 'return id(error_message);'
+
+# Set error in lambda:
+id(error_message) = "Error description";
+```
+
+**For HA → ESP32 Communication:**
+```yaml
+# ESP32: Define service
+api:
+  services:
+    - service: clear_error
+      then:
+        - lambda: 'id(error_message) = "";'
+```
+
+**For HA Automation:**
+```yaml
+alias: Monitor ESP32 Errors
+triggers:
+  - entity_id: sensor.esp32_error_state
+    trigger: state
+conditions:
+  - condition: template
+    value_template: "{{ trigger.to_state.state != '' }}"
+actions:
+  - data:
+      message: "{{ trigger.to_state.state }}"
+    action: notify.pushover
+  - action: esphome.device_clear_error
+```
+
 ## Project Overview
 
 **ESPHome-based pool solar heating controller for ESP32-DevKit** that integrates with Home Assistant. Uses a **hybrid architecture** where control logic runs on the ESP32 (due to unreliable WiFi) while Home Assistant provides the web interface for configuration and monitoring.
