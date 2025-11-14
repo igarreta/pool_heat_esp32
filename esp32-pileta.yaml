@@ -12,7 +12,6 @@ logger:
 
 # Enable Home Assistant API
 api:
-  id: homeassistant_api
   encryption:
     key: "TkVr/h9aAttsFad49ShvWFRfdA6NGtCM2BCE7R4sFxg="
 
@@ -255,12 +254,8 @@ sensor:
               // Send notification (once per day)
               if (!id(notif_param_validation_sent)) {
                 id(notif_param_validation_sent) = true;
-                auto call = id(homeassistant_api).get_service("notify", "pushover");
-                call.set_service_data("title", "Pool System Alert");
-                call.set_service_data("message", "⚠️ Pool: IMX auto-corregido (ajustado a " + to_string(min_allowed) + "°C)");
-                call.set_service_data("priority", "0");
-                call.perform();
-                ESP_LOGI("notifications", "Notificación enviada: Parámetro IMX auto-corregido");
+                id(notif_pending_message) = "⚠️ Pool: IMX auto-corregido (ajustado a " + to_string(min_allowed) + "°C)";
+                id(send_notification).execute();
               }
             } else {
               id(temp_max_diff) = new_max_diff;
@@ -293,12 +288,8 @@ sensor:
               // Send notification (once per day)
               if (!id(notif_param_validation_sent)) {
                 id(notif_param_validation_sent) = true;
-                auto call = id(homeassistant_api).get_service("notify", "pushover");
-                call.set_service_data("title", "Pool System Alert");
-                call.set_service_data("message", "⚠️ Pool: IMX auto-corregido por cambio en IMI (ajustado a " + to_string(min_allowed_max) + "°C)");
-                call.set_service_data("priority", "0");
-                call.perform();
-                ESP_LOGI("notifications", "Notificación enviada: Parámetro IMX auto-corregido (cambio IMI)");
+                id(notif_pending_message) = "⚠️ Pool: IMX auto-corregido por cambio en IMI (ajustado a " + to_string(min_allowed_max) + "°C)";
+                id(send_notification).execute();
               }
             }
 
@@ -441,6 +432,12 @@ globals:
     restore_value: no
     initial_value: 'true'
 
+  # Global variable to store pending notification message
+  - id: notif_pending_message
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+
 
 # Control logic - Evaluate heating conditions every 30 seconds
 interval:
@@ -478,12 +475,8 @@ interval:
             // Send notification (once per day)
             if (!id(notif_sensor_water_range_sent)) {
               id(notif_sensor_water_range_sent) = true;
-              auto call = id(homeassistant_api).get_service("notify", "pushover");
-              call.set_service_data("title", "Pool System Alert");
-              call.set_service_data("message", "⚠️ Pool: Sensor agua fuera de rango (" + to_string(temp_agua) + "°C)");
-              call.set_service_data("priority", "0");
-              call.perform();
-              ESP_LOGI("notifications", "Notificación enviada: Sensor agua fuera de rango");
+              id(notif_pending_message) = "⚠️ Pool: Sensor agua fuera de rango (" + to_string(temp_agua) + "°C)";
+              id(send_notification).execute();
             }
 
             return;
@@ -498,12 +491,8 @@ interval:
             // Send notification (once per day)
             if (!id(notif_sensor_heater_range_sent)) {
               id(notif_sensor_heater_range_sent) = true;
-              auto call = id(homeassistant_api).get_service("notify", "pushover");
-              call.set_service_data("title", "Pool System Alert");
-              call.set_service_data("message", "⚠️ Pool: Sensor calefactor fuera de rango (" + to_string(temp_calefactor) + "°C)");
-              call.set_service_data("priority", "0");
-              call.perform();
-              ESP_LOGI("notifications", "Notificación enviada: Sensor calefactor fuera de rango");
+              id(notif_pending_message) = "⚠️ Pool: Sensor calefactor fuera de rango (" + to_string(temp_calefactor) + "°C)";
+              id(send_notification).execute();
             }
 
             return;
@@ -521,12 +510,8 @@ interval:
             // Send notification (once per day)
             if (!id(notif_sensor_water_stale_sent)) {
               id(notif_sensor_water_stale_sent) = true;
-              auto call = id(homeassistant_api).get_service("notify", "pushover");
-              call.set_service_data("title", "Pool System Alert");
-              call.set_service_data("message", "⚠️ Pool: Sensor agua sin actualizar (>5 min)");
-              call.set_service_data("priority", "0");
-              call.perform();
-              ESP_LOGI("notifications", "Notificación enviada: Sensor agua obsoleto");
+              id(notif_pending_message) = "⚠️ Pool: Sensor agua sin actualizar (>5 min)";
+              id(send_notification).execute();
             }
 
             return;
@@ -542,12 +527,8 @@ interval:
             // Send notification (once per day)
             if (!id(notif_sensor_heater_stale_sent)) {
               id(notif_sensor_heater_stale_sent) = true;
-              auto call = id(homeassistant_api).get_service("notify", "pushover");
-              call.set_service_data("title", "Pool System Alert");
-              call.set_service_data("message", "⚠️ Pool: Sensor calefactor sin actualizar (>5 min)");
-              call.set_service_data("priority", "0");
-              call.perform();
-              ESP_LOGI("notifications", "Notificación enviada: Sensor calefactor obsoleto");
+              id(notif_pending_message) = "⚠️ Pool: Sensor calefactor sin actualizar (>5 min)";
+              id(send_notification).execute();
             }
 
             return;
@@ -564,12 +545,8 @@ interval:
             // Send notification (once per day)
             if (!id(notif_pump_desync_sent)) {
               id(notif_pump_desync_sent) = true;
-              auto call = id(homeassistant_api).get_service("notify", "pushover");
-              call.set_service_data("title", "Pool System Alert");
-              call.set_service_data("message", "⚠️ Pool: Desincronización de bombas detectada");
-              call.set_service_data("priority", "0");
-              call.perform();
-              ESP_LOGI("notifications", "Notificación enviada: Desincronización de bombas");
+              id(notif_pending_message) = "⚠️ Pool: Desincronización de bombas detectada";
+              id(send_notification).execute();
             }
 
             return;
@@ -586,12 +563,8 @@ interval:
               // Send notification (once per day)
               if (!id(notif_watchdog_sent)) {
                 id(notif_watchdog_sent) = true;
-                auto call = id(homeassistant_api).get_service("notify", "pushover");
-                call.set_service_data("title", "Pool System Alert");
-                call.set_service_data("message", "⚠️ Pool: Límite de 8 horas alcanzado");
-                call.set_service_data("priority", "0");
-                call.perform();
-                ESP_LOGI("notifications", "Notificación enviada: Watchdog 8 horas");
+                id(notif_pending_message) = "⚠️ Pool: Límite de 8 horas alcanzado";
+                id(send_notification).execute();
               }
 
               return;
@@ -779,6 +752,20 @@ switch:
       - switch.turn_off: pileta_bomba_esp
       - switch.turn_off: pileta_calefaccion_esp
       - logger.log: "Modo calefacción desactivado manualmente"
+
+script:
+  # Reusable script to send Pushover notifications
+  - id: send_notification
+    then:
+      - homeassistant.service:
+          service: notify.pushover
+          data:
+            title: "Pool System Alert"
+            message: !lambda 'return id(notif_pending_message);'
+            priority: "0"
+      - lambda: |-
+          ESP_LOGI("notifications", "Notificación enviada: %s", id(notif_pending_message).c_str());
+          id(notif_pending_message) = "";
 
 button:
   - platform: template
