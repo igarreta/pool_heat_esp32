@@ -25,23 +25,25 @@
 # Copy from here if adding to automations.yaml or using HA UI:
 - alias: "Pool System - Critical Error Notifications"
   description: "Send Pushover notifications when pool system errors occur"
-  trigger:
-    - platform: state
-      entity_id: sensor.esp32_pileta_pool_system_error
-  condition:
+  triggers:
+    - entity_id: sensor.esp32_pileta_pool_system_error
+      trigger: state
+  conditions:
     # Only trigger when error message is not empty
     - condition: template
-      value_template: "{{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
-  action:
+      value_template: >-
+        {{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown'
+        and trigger.to_state.state != 'unavailable' }}
+  actions:
     # Send Pushover notification
-    - service: notify.pushover
-      data:
+    - data:
         title: "Pool System Alert"
         message: "⚠️ {{ trigger.to_state.state }}"
         priority: "0"
+      action: notify.pushover
 
     # Clear the error message on ESP32 to prevent repeat notifications
-    - service: esphome.esp32_pileta_clear_error_message
+    - action: esphome.esp32_pileta_clear_error_message
   mode: single
 
 # IMPORTANT NOTES:
