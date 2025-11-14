@@ -1,28 +1,49 @@
 # Home Assistant Automation for Pool System Notifications
-# Add this to your Home Assistant configuration.yaml or automations.yaml
+#
+# INSTALLATION OPTIONS:
+#
+# Option 1 - Via Home Assistant UI (RECOMMENDED):
+# 1. Go to Settings → Automations & Scenes → Create Automation
+# 2. Click the 3-dots menu → Edit in YAML
+# 3. Copy the YAML below (starting from "alias:")
+# 4. Save
+#
+# Option 2 - Add to automations.yaml file:
+# 1. Copy the YAML below (starting from "alias:")
+# 2. Paste at the end of /config/automations.yaml
+# 3. Make sure it's at the same indentation level as other automations (no extra spaces)
+# 4. Reload automations or restart Home Assistant
+#
+# Option 3 - Add to configuration.yaml:
+# 1. Uncomment the "automation:" line below
+# 2. Copy the entire block to configuration.yaml
+# 3. Restart Home Assistant
 
-automation:
-  - alias: "Pool System - Critical Error Notifications"
-    description: "Send Pushover notifications when pool system errors occur"
-    trigger:
-      - platform: state
-        entity_id: sensor.esp32_pileta_pool_system_error
-    condition:
-      # Only trigger when error message is not empty
-      - condition: template
-        value_template: "{{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
-    action:
-      # Send Pushover notification
-      - service: notify.pushover
+# Uncomment the line below ONLY if adding to configuration.yaml:
+# automation:
+
+# Copy from here if adding to automations.yaml or using HA UI:
+- alias: "Pool System - Critical Error Notifications"
+  description: "Send Pushover notifications when pool system errors occur"
+  trigger:
+    - platform: state
+      entity_id: sensor.esp32_pileta_pool_system_error
+  condition:
+    # Only trigger when error message is not empty
+    - condition: template
+      value_template: "{{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
+  action:
+    # Send Pushover notification
+    - service: notify.pushover
+      data:
+        title: "Pool System Alert"
+        message: "⚠️ {{ trigger.to_state.state }}"
         data:
-          title: "Pool System Alert"
-          message: "⚠️ {{ trigger.to_state.state }}"
-          data:
-            priority: 0
+          priority: 0
 
-      # Clear the error message on ESP32 to prevent repeat notifications
-      - service: esphome.esp32_pileta_clear_error_message
-    mode: single
+    # Clear the error message on ESP32 to prevent repeat notifications
+    - service: esphome.esp32_pileta_clear_error_message
+  mode: single
 
 # IMPORTANT NOTES:
 # 1. This automation sends notifications immediately when errors occur
