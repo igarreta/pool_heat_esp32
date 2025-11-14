@@ -17,10 +17,9 @@ api:
   services:
     - service: clear_error_message
       then:
-        - globals.set:
-            id: last_error_message
-            value: ""
-        - logger.log: "Error message cleared by Home Assistant"
+        - lambda: |-
+            id(last_error_message) = "";
+            ESP_LOGI("notifications", "Error message cleared by Home Assistant");
 
 ota:
   - platform: esphome
