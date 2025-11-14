@@ -1,0 +1,47 @@
+# Home Assistant Automation for Pool System Notifications
+# Add this to your Home Assistant configuration.yaml or automations.yaml
+
+automation:
+  - alias: "Pool System - Critical Error Notifications"
+    description: "Send Pushover notifications when pool system errors occur"
+    trigger:
+      - platform: state
+        entity_id: sensor.esp32_pileta_pool_system_error
+    condition:
+      # Only trigger when error message is not empty
+      - condition: template
+        value_template: "{{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
+    action:
+      - service: notify.pushover
+        data:
+          title: "Pool System Alert"
+          message: "⚠️ {{ trigger.to_state.state }}"
+          data:
+            priority: 0
+    mode: single
+
+# IMPORTANT NOTES:
+# 1. This automation sends notifications immediately when errors occur
+# 2. Daily throttling is handled by ESP32 (notif_*_sent flags reset at midnight)
+# 3. Empty string sensor value = no active errors
+# 4. Mode 'single' prevents duplicate notifications while processing
+# 5. Make sure notify.pushover service is configured in Home Assistant
+
+# INSTALLATION:
+# 1. Copy this automation to your Home Assistant
+# 2. Restart Home Assistant or reload automations
+# 3. Test using the ESP32 test button: button.esp32_pileta_test_pushover_notification
+# 4. Monitor ESP32 logs to see when error states are set
+
+# ERROR TYPES MONITORED:
+# - IMX parameter auto-correction
+# - Sensor range violations (water/heater)
+# - Sensor staleness (>5 min without update)
+# - Pump desynchronization
+# - 8-hour runtime watchdog
+
+# CUSTOMIZATION:
+# - Change priority (0 = normal, 1 = high, 2 = emergency)
+# - Add actions (e.g., turn on a light, send SMS)
+# - Filter specific error types with additional conditions
+# - Add notification history tracking
