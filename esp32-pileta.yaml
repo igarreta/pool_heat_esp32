@@ -12,6 +12,7 @@ logger:
 
 # Enable Home Assistant API
 api:
+  id: homeassistant_api
   encryption:
     key: "TkVr/h9aAttsFad49ShvWFRfdA6NGtCM2BCE7R4sFxg="
 
