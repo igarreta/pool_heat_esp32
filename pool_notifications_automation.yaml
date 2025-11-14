@@ -12,20 +12,26 @@ automation:
       - condition: template
         value_template: "{{ trigger.to_state.state != '' and trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
     action:
+      # Send Pushover notification
       - service: notify.pushover
         data:
           title: "Pool System Alert"
           message: "⚠️ {{ trigger.to_state.state }}"
           data:
             priority: 0
+
+      # Clear the error message on ESP32 to prevent repeat notifications
+      - service: esphome.esp32_pileta_clear_error_message
     mode: single
 
 # IMPORTANT NOTES:
 # 1. This automation sends notifications immediately when errors occur
-# 2. Daily throttling is handled by ESP32 (notif_*_sent flags reset at midnight)
-# 3. Empty string sensor value = no active errors
-# 4. Mode 'single' prevents duplicate notifications while processing
-# 5. Make sure notify.pushover service is configured in Home Assistant
+# 2. After sending notification, it clears the error message on ESP32
+# 3. Daily throttling is handled by ESP32 (notif_*_sent flags reset at midnight)
+# 4. Empty string sensor value = no active errors
+# 5. Mode 'single' prevents duplicate notifications while processing
+# 6. Make sure notify.pushover service is configured in Home Assistant
+# 7. ESPHome service esphome.esp32_pileta_clear_error_message automatically available
 
 # INSTALLATION:
 # 1. Copy this automation to your Home Assistant

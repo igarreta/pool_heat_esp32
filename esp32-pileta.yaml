@@ -14,6 +14,13 @@ logger:
 api:
   encryption:
     key: "TkVr/h9aAttsFad49ShvWFRfdA6NGtCM2BCE7R4sFxg="
+  services:
+    - service: clear_error_message
+      then:
+        - globals.set:
+            id: last_error_message
+            value: ""
+        - logger.log: "Error message cleared by Home Assistant"
 
 ota:
   - platform: esphome
