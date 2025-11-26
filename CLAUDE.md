@@ -175,11 +175,18 @@ actions:
 1. IAC is enabled
 2. SAG < (ITO - 0.5°C) — Dead zone prevents rapid cycling
 3. SCL > (SAG + IMX) — Heater is sufficiently warmer than water
+4. Current time is between 9:00-16:59 (only enforced if time is synced) — Prevents heating outside optimal solar hours
 
 **Turn OFF heating when ANY condition met:**
 1. SAG ≥ ITO — Target temperature reached
 2. SCL ≤ (SAG + IMI) — Heater insufficient temperature
 3. IAC is disabled
+
+**Time Window Constraint (Phase 8):**
+- Heating can only **START** between 9:00-16:59 when time is synced with Home Assistant
+- If time is NOT synced, no time restrictions apply (autonomous operation)
+- Running heating cycles are NOT interrupted at 17:00 (will continue until normal stop conditions)
+- Time constraint logged at DEBUG level to reduce log noise
 
 **Parameter Validation:** IMX ≥ (IMI + 1°C) to prevent logic conflicts
 - Automatically enforced on ESP32
