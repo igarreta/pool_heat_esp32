@@ -19,6 +19,7 @@ api:
       then:
         - lambda: |-
             id(last_error_message) = "";
+            id(pool_error_sensor).publish_state(id(last_error_message));
             ESP_LOGI("notifications", "Error message cleared by Home Assistant");
 
 ota:
@@ -261,6 +262,7 @@ sensor:
               if (!id(notif_param_validation_sent)) {
                 id(notif_param_validation_sent) = true;
                 id(last_error_message) = "IMX auto-corregido: " + to_string(min_allowed) + "°C";
+                id(pool_error_sensor).publish_state(id(last_error_message));
                 ESP_LOGI("notifications", "Error state: IMX auto-corregido");
               }
             } else {
@@ -295,6 +297,7 @@ sensor:
               if (!id(notif_param_validation_sent)) {
                 id(notif_param_validation_sent) = true;
                 id(last_error_message) = "IMX auto-corregido (IMI): " + to_string(min_allowed_max) + "°C";
+                id(pool_error_sensor).publish_state(id(last_error_message));
                 ESP_LOGI("notifications", "Error state: IMX auto-corregido (cambio IMI)");
               }
             }
@@ -330,10 +333,10 @@ text_sensor:
             args: ['x.c_str()']
 
   # Error state sensor for Home Assistant to monitor
+  # Note: No update_interval - only publishes on manual state changes
   - platform: template
     name: "Pool System Error"
     id: pool_error_sensor
-    update_interval: 5s
     lambda: |-
       return id(last_error_message);
 
@@ -490,6 +493,7 @@ interval:
             if (!id(notif_sensor_water_range_sent)) {
               id(notif_sensor_water_range_sent) = true;
               id(last_error_message) = "Sensor agua fuera de rango: " + to_string(temp_agua) + "°C";
+              id(pool_error_sensor).publish_state(id(last_error_message));
               ESP_LOGI("notifications", "Error state: Sensor agua fuera de rango");
             }
 
@@ -506,6 +510,7 @@ interval:
             if (!id(notif_sensor_heater_range_sent)) {
               id(notif_sensor_heater_range_sent) = true;
               id(last_error_message) = "Sensor calefactor fuera de rango: " + to_string(temp_calefactor) + "°C";
+              id(pool_error_sensor).publish_state(id(last_error_message));
               ESP_LOGI("notifications", "Error state: Sensor calefactor fuera de rango");
             }
 
@@ -525,6 +530,7 @@ interval:
             if (!id(notif_sensor_water_stale_sent)) {
               id(notif_sensor_water_stale_sent) = true;
               id(last_error_message) = "Sensor agua sin actualizar (>5 min)";
+              id(pool_error_sensor).publish_state(id(last_error_message));
               ESP_LOGI("notifications", "Error state: Sensor agua obsoleto");
             }
 
@@ -542,6 +548,7 @@ interval:
             if (!id(notif_sensor_heater_stale_sent)) {
               id(notif_sensor_heater_stale_sent) = true;
               id(last_error_message) = "Sensor calefactor sin actualizar (>5 min)";
+              id(pool_error_sensor).publish_state(id(last_error_message));
               ESP_LOGI("notifications", "Error state: Sensor calefactor obsoleto");
             }
 
@@ -560,6 +567,7 @@ interval:
             if (!id(notif_pump_desync_sent)) {
               id(notif_pump_desync_sent) = true;
               id(last_error_message) = "Desincronización de bombas detectada";
+              id(pool_error_sensor).publish_state(id(last_error_message));
               ESP_LOGI("notifications", "Error state: Desincronización de bombas");
             }
 
@@ -578,6 +586,7 @@ interval:
               if (!id(notif_watchdog_sent)) {
                 id(notif_watchdog_sent) = true;
                 id(last_error_message) = "Límite de 8 horas alcanzado";
+                id(pool_error_sensor).publish_state(id(last_error_message));
                 ESP_LOGI("notifications", "Error state: Watchdog 8 horas");
               }
 
