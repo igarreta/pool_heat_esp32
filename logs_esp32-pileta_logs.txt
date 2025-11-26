@@ -1,0 +1,186 @@
+INFO ESPHome 2025.11.1
+INFO Reading configuration /config/esphome/esp32-pileta.yaml...
+INFO Detected timezone 'America/Argentina/Buenos_Aires'
+WARNING GPIO2 is a strapping PIN and should only be used for I/O with care.
+Attaching external pullup/down resistors to strapping pins can cause unexpected failures.
+See https://esphome.io/guides/faq.html#why-am-i-getting-a-warning-about-strapping-pins
+INFO Starting looking for IP in topic esphome/discover/esp32-pileta
+INFO Connected to MQTT broker!
+INFO Send discover via MQTT broker topic: esphome/ping/esp32-pileta
+INFO Found IP: ['192.168.1.11']
+INFO Starting log output from 192.168.1.11 or esp32-pileta.local using esphome API
+INFO Successfully resolved esp32-pileta @ 192.168.1.11 in 0.234s
+INFO Successfully connected to esp32-pileta @ 192.168.1.11 in 0.046s
+INFO Successful handshake with esp32-pileta @ 192.168.1.11 in 0.120s
+[13:57:06.883][I][app:185]: ESPHome version 2025.10.5 compiled on Nov 14 2025, 14:52:38
+[13:57:06.884][C][wifi:679]: WiFi:
+[13:57:06.886][C][wifi:458]:   Local MAC: A4:CF:12:1E:AD:C8
+[13:57:06.888][C][wifi:465]:   IP Address: c0a8:10b:61f:403f:b440:e80:30f6:fb3f
+[13:57:06.924][C][wifi:469]:   SSID: 'GrEven'[redacted]
+[13:57:06.924][C][wifi:469]:   BSSID: 10:27:F5:3C:D4:66[redacted]
+[13:57:06.924][C][wifi:469]:   Hostname: 'esp32-pileta'
+[13:57:06.924][C][wifi:469]:   Signal strength: -60 dB ▂▄▆█
+[13:57:06.924][C][wifi:469]:   Channel: 2
+[13:57:06.924][C][wifi:469]:   Subnet: ffff:ff00:24f9:fb3f:ae40:e80:a0f7:fb3f
+[13:57:06.924][C][wifi:469]:   Gateway: 192.168.1.1
+[13:57:06.924][C][wifi:469]:   DNS1: 192.168.1.1
+[13:57:06.924][C][wifi:469]:   DNS2: 0.0.0.0
+[13:57:06.927][C][logger:261]: Logger:
+[13:57:06.927][C][logger:261]:   Max Level: DEBUG
+[13:57:06.927][C][logger:261]:   Initial Level: DEBUG
+[13:57:06.927][C][logger:267]:   Log Baud Rate: 115200
+[13:57:06.927][C][logger:267]:   Hardware UART: UART0
+[13:57:06.931][C][logger:274]:   Task Log Buffer Size: 768
+[13:57:06.932][C][gpio.one_wire:021]: GPIO 1-wire bus:
+[13:57:06.932][C][gpio.one_wire:022]:   Pin: GPIO25
+[13:57:06.933][C][gpio.one_wire:084]:   Found devices:
+[13:57:06.948][C][gpio.one_wire:086]:     0xd81c77d446f18a28 (DS18B20)
+[13:57:06.967][C][gpio.one_wire:086]:     0x65011447d4f2aa28 (DS18B20)
+[13:57:06.988][C][gpio.one_wire:086]:     0xe0011448ab01aa28 (DS18B20)
+[13:57:06.988][C][template.sensor:015]: Template Sensor 'Horas Bomba Hoy'
+[13:57:06.988][C][template.sensor:015]:   State Class: ''
+[13:57:06.988][C][template.sensor:015]:   Unit of Measurement: 'h'
+[13:57:06.988][C][template.sensor:015]:   Accuracy Decimals: 1
+[13:57:06.991][C][template.sensor:362]:   Update Interval: 60.0s
+[13:57:07.022][C][template.sensor:015]: Template Sensor 'Horas Bomba Ayer'
+[13:57:07.022][C][template.sensor:015]:   State Class: ''
+[13:57:07.022][C][template.sensor:015]:   Unit of Measurement: 'h'
+[13:57:07.022][C][template.sensor:015]:   Accuracy Decimals: 1
+[13:57:07.023][C][template.sensor:362]:   Update Interval: 60.0s
+[13:57:07.030][C][template.text_sensor:014]: Template Sensor 'Pool System Error'
+[13:57:07.063][C][switch.gpio:087]: GPIO Switch 'Calefaccion pileta (ESP32)'
+[13:57:07.063][C][switch.gpio:087]:   Restore Mode: always OFF
+[13:57:07.067][C][switch.gpio:029]:   Pin: GPIO16
+[13:57:07.120][C][switch.gpio:087]: GPIO Switch 'Bomba pileta (ESP32)'
+[13:57:07.120][C][switch.gpio:087]:   Restore Mode: always OFF
+[13:57:07.140][C][switch.gpio:029]:   Pin: GPIO2
+[13:57:07.183][C][template.switch:087]: Template Switch 'Calefaccion Completa (ESP32)'
+[13:57:07.183][C][template.switch:087]:   Restore Mode: always OFF
+[13:57:07.189][C][template.switch:057]:   Optimistic: NO
+[13:57:07.189][C][dallas.temp.sensor:029]: Dallas Temperature Sensor:
+[13:57:07.191][C][dallas.temp.sensor:034]:   Address: 0x65011447d4f2aa28 (DS18B20)
+[13:57:07.195][C][dallas.temp.sensor:035]:   Resolution: 12 bits
+[13:57:07.223][C][dallas.temp.sensor:362]:   Update Interval: 30.0s
+[13:57:07.230][C][adc.esp32:015]: ADC Sensor 'Iluminacion techo'
+[13:57:07.230][C][adc.esp32:015]:   State Class: 'measurement'
+[13:57:07.230][C][adc.esp32:015]:   Unit of Measurement: 'V'
+[13:57:07.230][C][adc.esp32:015]:   Accuracy Decimals: 2
+[13:57:07.230][C][adc.esp32:025]:   Device Class: 'voltage'
+[13:57:07.234][C][adc.esp32:122]:   Pin: GPIO32
+[13:57:07.235][C][adc.esp32:123]:   Channel:       4
+[13:57:07.235][C][adc.esp32:123]:   Unit:          ADC1
+[13:57:07.235][C][adc.esp32:123]:   Attenuation:   0 dB
+[13:57:07.235][C][adc.esp32:123]:   Samples:       1
+[13:57:07.235][C][adc.esp32:123]:   Sampling mode: average
+[13:57:07.240][C][adc.esp32:133]:   Setup Status:
+[13:57:07.240][C][adc.esp32:133]:     Handle Init:  OK
+[13:57:07.240][C][adc.esp32:133]:     Config:       OK
+[13:57:07.240][C][adc.esp32:133]:     Calibration:  OK
+[13:57:07.240][C][adc.esp32:133]:     Overall Init: OK
+[13:57:07.258][C][adc.esp32:362]:   Update Interval: 60.0s
+[13:57:07.476][C][homeassistant.time:010]: Home Assistant Time:
+[13:57:07.476][C][homeassistant.time:010]:   Timezone: '<-03>3'
+[13:57:07.480][C][dallas.temp.sensor:029]: Dallas Temperature Sensor:
+[13:57:07.496][C][dallas.temp.sensor:034]:   Address: 0xd81c77d446f18a28 (DS18B20)
+[13:57:07.497][C][dallas.temp.sensor:035]:   Resolution: 12 bits
+[13:57:07.497][C][dallas.temp.sensor:362]:   Update Interval: 30.0s
+[13:57:07.500][C][dallas.temp.sensor:029]: Dallas Temperature Sensor:
+[13:57:07.521][C][dallas.temp.sensor:034]:   Address: 0xe0011448ab01aa28 (DS18B20)
+[13:57:07.530][C][dallas.temp.sensor:035]:   Resolution: 12 bits
+[13:57:07.533][C][dallas.temp.sensor:362]:   Update Interval: 30.0s
+[13:57:07.542][C][captive_portal:116]: Captive Portal:
+[13:57:07.562][C][esphome.ota:093]: Over-The-Air updates:
+[13:57:07.562][C][esphome.ota:093]:   Address: esp32-pileta.local:3232
+[13:57:07.562][C][esphome.ota:093]:   Version: 2
+[13:57:07.580][C][esphome.ota:100]:   Password configured
+[13:57:07.582][C][safe_mode:018]: Safe Mode:
+[13:57:07.582][C][safe_mode:018]:   Successful after: 60s
+[13:57:07.582][C][safe_mode:018]:   Invoke after: 10 attempts
+[13:57:07.582][C][safe_mode:018]:   Duration: 300s
+[13:57:07.589][C][web_server.ota:241]: Web Server OTA
+[13:57:07.604][C][api:222]: Server:
+[13:57:07.604][C][api:222]:   Address: esp32-pileta.local:6053
+[13:57:07.604][C][api:222]:   Listen backlog: 4
+[13:57:07.604][C][api:222]:   Max connections: 8
+[13:57:07.630][C][api:229]:   Noise encryption: YES
+[13:57:07.631][C][mqtt:154]: MQTT:
+[13:57:07.631][C][mqtt:154]:   Server Address: 192.168.1.8:1883 (192.168.1.8)
+[13:57:07.631][C][mqtt:154]:   Username: ''[redacted]
+[13:57:07.631][C][mqtt:154]:   Client ID: 'esp32-pileta-a4cf121eadc8'[redacted]
+[13:57:07.631][C][mqtt:154]:   Clean Session: NO
+[13:57:07.631][C][mqtt:164]:   Discovery IP enabled
+[13:57:07.635][C][mqtt:167]:   Discovery prefix: 'homeassistant'
+[13:57:07.635][C][mqtt:167]:   Discovery retain: YES
+[13:57:07.638][C][mqtt:172]:   Topic Prefix: 'esp32-pileta'
+[13:57:07.640][C][mqtt:174]:   Log Topic: 'esp32-pileta/debug'
+[13:57:07.646][C][mqtt:177]:   Availability: 'esp32-pileta/status'
+[13:57:07.648][C][wifi_signal.sensor:015]: WiFi Signal 'Señal WiFi ESP32 Pileta'
+[13:57:07.648][C][wifi_signal.sensor:015]:   State Class: 'measurement'
+[13:57:07.648][C][wifi_signal.sensor:015]:   Unit of Measurement: 'dBm'
+[13:57:07.648][C][wifi_signal.sensor:015]:   Accuracy Decimals: 0
+[13:57:07.666][C][wifi_signal.sensor:025]:   Device Class: 'signal_strength'
+[13:57:07.686][C][mdns:179]: mDNS:
+[13:57:07.686][C][mdns:179]:   Hostname: esp32-pileta
+[13:57:07.686][C][mqtt.sensor:028]: MQTT Sensor 'temperatura caja techo':
+[13:57:07.686][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/temperatura_caja_techo/state'
+[13:57:07.690][C][mqtt.sensor:028]: MQTT Sensor 'Iluminacion techo':
+[13:57:07.692][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/iluminacion_techo/state'
+[13:57:07.708][C][mqtt.sensor:028]: MQTT Sensor 'Señal WiFi ESP32 Pileta':
+[13:57:07.728][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/se__al_wifi_esp32_pileta/state'
+[13:57:07.748][C][mqtt.sensor:028]: MQTT Sensor 'Horas Bomba Hoy':
+[13:57:07.749][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/horas_bomba_hoy/state'
+[13:57:07.749][C][mqtt.sensor:028]: MQTT Sensor 'Horas Bomba Ayer':
+[13:57:07.749][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/horas_bomba_ayer/state'
+[13:57:07.755][C][mqtt.text_sensor:029]: MQTT Text Sensor 'Pool System Error':
+[13:57:07.763][C][mqtt.text_sensor:030]:   State Topic: 'esp32-pileta/sensor/pool_system_error/state'
+[13:57:07.773][C][mqtt.switch:041]: MQTT Switch 'Calefaccion pileta (ESP32)': 
+[13:57:07.781][C][mqtt.switch:042]:   State Topic: 'esp32-pileta/switch/calefaccion_pileta__esp32_/state'
+[13:57:07.781][C][mqtt.switch:042]:   Command Topic: 'esp32-pileta/switch/calefaccion_pileta__esp32_/command'
+[13:57:07.788][C][mqtt.switch:041]: MQTT Switch 'Calefaccion Completa (ESP32)': 
+[13:57:07.796][C][mqtt.switch:042]:   State Topic: 'esp32-pileta/switch/calefaccion_completa__esp32_/state'
+[13:57:07.796][C][mqtt.switch:042]:   Command Topic: 'esp32-pileta/switch/calefaccion_completa__esp32_/command'
+[13:57:07.804][C][mqtt.switch:041]: MQTT Switch 'Bomba pileta (ESP32)': 
+[13:57:07.840][C][mqtt.switch:042]:   State Topic: 'esp32-pileta/switch/bomba_pileta__esp32_/state'
+[13:57:07.851][C][mqtt.switch:042]:   Command Topic: 'esp32-pileta/switch/bomba_pileta__esp32_/command'
+[13:57:07.851][C][mqtt.button:029]: MQTT Button 'Test Pushover Notification': 
+[13:57:07.851][C][mqtt.button:030]:   Command Topic: 'esp32-pileta/button/test_pushover_notification/command'
+[13:57:07.872][C][mqtt.sensor:028]: MQTT Sensor 'temperatura agua':
+[13:57:07.872][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/temperatura_agua/state'
+[13:57:07.876][C][mqtt.sensor:028]: MQTT Sensor 'temperatura calefactor':
+[13:57:07.876][C][mqtt.sensor:032]:   State Topic: 'esp32-pileta/sensor/temperatura_calefactor/state'
+[13:57:07.899][C][homeassistant.sensor:015]: Homeassistant Sensor 'HA Temperatura Objetivo (ITO)'
+[13:57:07.899][C][homeassistant.sensor:015]:   State Class: ''
+[13:57:07.899][C][homeassistant.sensor:015]:   Unit of Measurement: ''
+[13:57:07.899][C][homeassistant.sensor:015]:   Accuracy Decimals: 1
+[13:57:07.900][C][homeassistant.sensor:031]:   Entity ID: 'input_number.pileta_temp_objetivo'
+[13:57:07.938][C][homeassistant.sensor:015]: Homeassistant Sensor 'HA Temp Max Diff (IMX)'
+[13:57:07.938][C][homeassistant.sensor:015]:   State Class: ''
+[13:57:07.938][C][homeassistant.sensor:015]:   Unit of Measurement: ''
+[13:57:07.938][C][homeassistant.sensor:015]:   Accuracy Decimals: 1
+[13:57:07.943][C][homeassistant.sensor:031]:   Entity ID: 'input_number.pileta_temp_max_diff'
+[13:57:07.952][C][homeassistant.sensor:015]: Homeassistant Sensor 'HA Temp Min Diff (IMI)'
+[13:57:07.952][C][homeassistant.sensor:015]:   State Class: ''
+[13:57:07.952][C][homeassistant.sensor:015]:   Unit of Measurement: ''
+[13:57:07.952][C][homeassistant.sensor:015]:   Accuracy Decimals: 1
+[13:57:07.957][C][homeassistant.sensor:031]:   Entity ID: 'input_number.pileta_temp_min_diff'
+[13:57:07.990][C][homeassistant.text_sensor:014]: Homeassistant Text Sensor 'HA Activar Calefaccion (IAC)'
+[13:57:07.991][C][homeassistant.text_sensor:024]:   Entity ID: 'input_boolean.activar_calefaccion_pileta'
+[13:57:08.034][C][homeassistant.text_sensor:014]: Homeassistant Text Sensor 'HA Activar Skimmer (IAS)'
+[13:57:08.047][C][homeassistant.text_sensor:024]:   Entity ID: 'input_boolean.activar_skimmer_pileta'
+[13:57:08.068][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:13.066][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:18.075][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:23.087][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:27.491][D][dallas.temp.sensor:054]: 'temperatura agua': Got Temperature=29.6°C
+[13:57:27.497][D][sensor:131]: 'temperatura agua': Sending state 29.56250 °C with 1 decimals of accuracy
+[13:57:27.635][D][control_logic:588]: Estado: IAC=ON, SAG=29.6°C, SCL=58.6°C, ITO=29.0°C, IMX=20.0°C, IMI=6.0°C, Calef=OFF
+[13:57:27.672][I][control_logic:604]: Apagar: Temperatura objetivo alcanzada (29.6 >= 29.0)
+[13:57:27.697][D][control_logic:643]: No cambio: Temperatura cerca del objetivo (29.6 >= 28.5)
+[13:57:28.079][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:28.376][D][dallas.temp.sensor:054]: 'temperatura calefactor': Got Temperature=58.6°C
+[13:57:28.387][D][sensor:131]: 'temperatura calefactor': Sending state 58.62500 °C with 1 decimals of accuracy
+[13:57:30.255][D][dallas.temp.sensor:054]: 'temperatura caja techo': Got Temperature=48.4°C
+[13:57:30.256][D][sensor:131]: 'temperatura caja techo': Sending state 48.37500 °C with 1 decimals of accuracy
+[13:57:32.587][D][sensor:131]: 'Señal WiFi ESP32 Pileta': Sending state -60.00000 dBm with 0 decimals of accuracy
+[13:57:33.087][D][text_sensor:085]: 'Pool System Error': Sending state ''
+[13:57:38.096][D][text_sensor:085]: 'Pool System Error': Sending state ''
