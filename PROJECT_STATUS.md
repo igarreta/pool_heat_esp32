@@ -1,7 +1,7 @@
 # Project Status - Pool Heat ESP32
 
-**Last Updated:** 2025-11-14
-**Current Phase:** Phase 7 COMPLETE - Production deployed and tested
+**Last Updated:** 2025-11-26
+**Current Phase:** Phase 8 COMPLETE - Time-based heating constraints
 **Device:** ESP32-DevKit (ESP32-pileta)
 **Repository:** https://github.com/igarreta/pool_heat_esp32
 
@@ -9,7 +9,19 @@
 
 ## Current Status: ✅ PRODUCTION DEPLOYED - Fully Operational
 
-### ✅ Recently Completed (2025-11-14)
+### ✅ Recently Completed (2025-11-26)
+
+1. **Phase 8: Time Window Constraint for Heating (2025-11-26)**
+   - ✅ **FEATURE:** Heating can only START between 9:00-16:59 (when time is synced)
+   - ✅ **AUTONOMOUS:** No time restrictions if time not synced (ESP32 operates independently)
+   - ✅ **GRACEFUL:** Running heating cycles continue past 17:00 until normal stop conditions
+   - ✅ **LOGGING:** Time window rejections logged at DEBUG level (reduces log noise)
+   - ✅ **INFRASTRUCTURE:** Leverages existing time sync from skimmer automation (Phase 6)
+   - ✅ **SIMPLE:** Single check in turn-on logic (~15 lines added)
+   - ✅ **FILES:** `esp32-pileta.yaml` (lines 625-648), `CLAUDE.md` updated
+   - ✅ **PURPOSE:** Prevents heating outside optimal solar hours (9am-5pm)
+
+### ✅ Previously Completed (2025-11-14)
 
 1. **Phase 7: Critical Event Notifications - FINAL IMPLEMENTATION (2025-11-14)**
    - ✅ **ARCHITECTURE:** ESP32 → Text Sensor → HA Automation → Pushover

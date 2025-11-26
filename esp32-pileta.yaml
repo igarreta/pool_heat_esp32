@@ -621,11 +621,30 @@ interval:
           if (habilitada &&
               temp_agua < (objetivo - 0.5) &&  // Dead zone of 0.5°C
               temp_calefactor > (temp_agua + max_diff)) {
-            should_turn_on = true;
-            ESP_LOGI("control_logic", "Condiciones para encender cumplidas:");
-            ESP_LOGI("control_logic", "  - IAC habilitada: SI");
-            ESP_LOGI("control_logic", "  - SAG < (ITO - 0.5): %.1f < %.1f = SI", temp_agua, objetivo - 0.5);
-            ESP_LOGI("control_logic", "  - SCL > (SAG + IMX): %.1f > %.1f = SI", temp_calefactor, temp_agua + max_diff);
+
+            // Time window constraint: only start heating between 9:00-16:59 (if time synced)
+            if (id(time_synced)) {
+              int current_hour = id(ha_time).now().hour;
+              if (current_hour < 9 || current_hour >= 17) {
+                ESP_LOGD("control_logic", "No encender: fuera de horario permitido (hora=%d, ventana: 9:00-16:59)", current_hour);
+                // Don't set should_turn_on - exit without starting heating
+              } else {
+                should_turn_on = true;
+                ESP_LOGI("control_logic", "Condiciones para encender cumplidas:");
+                ESP_LOGI("control_logic", "  - IAC habilitada: SI");
+                ESP_LOGI("control_logic", "  - SAG < (ITO - 0.5): %.1f < %.1f = SI", temp_agua, objetivo - 0.5);
+                ESP_LOGI("control_logic", "  - SCL > (SAG + IMX): %.1f > %.1f = SI", temp_calefactor, temp_agua + max_diff);
+                ESP_LOGI("control_logic", "  - Hora actual: %d:00 (ventana permitida)", current_hour);
+              }
+            } else {
+              // No time sync - proceed without time constraints
+              should_turn_on = true;
+              ESP_LOGI("control_logic", "Condiciones para encender cumplidas:");
+              ESP_LOGI("control_logic", "  - IAC habilitada: SI");
+              ESP_LOGI("control_logic", "  - SAG < (ITO - 0.5): %.1f < %.1f = SI", temp_agua, objetivo - 0.5);
+              ESP_LOGI("control_logic", "  - SCL > (SAG + IMX): %.1f > %.1f = SI", temp_calefactor, temp_agua + max_diff);
+              ESP_LOGD("control_logic", "  - Tiempo no sincronizado: sin restricción horaria");
+            }
           }
 
           if (should_turn_on && !calefaccion_on) {
