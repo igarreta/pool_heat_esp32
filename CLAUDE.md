@@ -151,6 +151,40 @@ actions:
 
 **Warning:** GPIO2 is a strapping pin - monitor boot behavior if issues occur.
 
+### ESP32 Capacity and Performance
+
+**Compilation Time:**
+- Clean build: ~700-720 seconds (12 minutes) on Proxmox VM
+- Incremental builds: ~30-60 seconds (only recompiles changed code)
+- **Note:** Long initial compile time is normal for ESPHome on virtualized HA
+
+**Memory Usage (as of Phase 7 completion):**
+```
+IRAM (Instruction RAM):  72.9% used  ⚠️  CONSTRAINT
+  - Used: 95,555 bytes
+  - Free: 35,517 bytes (27.1%)
+  - Total: 131,072 bytes
+
+DRAM (Data RAM):         22.5% used  ✅  GOOD
+  - Used: 40,644 bytes
+  - Free: 140,092 bytes (77.5%)
+  - Total: 180,736 bytes
+
+Flash Storage:           65.0% used  ✅  OK
+  - Used: 1,192,415 bytes
+  - Free: ~642,593 bytes (35%)
+  - Total: 1,835,008 bytes
+```
+
+**Capacity for Future Additions:**
+- ✅ **Safe to add:** Additional sensors, switches, simple automations, HA input entities
+- ⚠️  **Proceed with caution:** Complex algorithms, heavy math operations
+- ❌ **Not recommended:** Large libraries (camera, Bluetooth, advanced ML), image processing
+
+**Critical Constraint:** IRAM is at 73% - this is the limiting factor. Monitor IRAM usage when adding features. If IRAM exceeds 85%, optimization or feature removal may be required.
+
+**Recommendation:** Keep future additions incremental and test compilation after each change to monitor memory impact.
+
 ### Home Assistant Integration Entities
 
 **Input Controls (HA → ESP32):**
